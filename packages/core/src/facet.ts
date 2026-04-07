@@ -1,10 +1,11 @@
 import { invariant } from "./util/invariant.ts";
+import { uniqueById } from "./util/unique.ts";
 import type { Item } from "./item.ts";
 
 export interface Facet {
   readonly id: string;
   readonly name: string;
-  readonly itemIds: ReadonlySet<string>;
+  readonly itemIds: readonly string[];
 }
 
 export function createFacet(
@@ -17,7 +18,7 @@ export function createFacet(
     !facets.some((f) => f.id === id),
     `Facet with id "${id}" already exists`,
   );
-  return [...facets, { id, name, itemIds: new Set() }];
+  return [...facets, { id, name, itemIds: [] }];
 }
 
 export function renameFacet(
@@ -49,9 +50,7 @@ export function addItemToFacet(
   );
   return facets.map((f) => {
     if (f.id !== facetId) return f;
-    const newItemIds = new Set(f.itemIds);
-    newItemIds.add(itemId);
-    return { ...f, itemIds: newItemIds };
+    return { ...f, itemIds: uniqueById([...f.itemIds, itemId]) };
   });
 }
 
@@ -66,9 +65,7 @@ export function removeItemFromFacet(
   );
   return facets.map((f) => {
     if (f.id !== facetId) return f;
-    const newItemIds = new Set(f.itemIds);
-    newItemIds.delete(itemId);
-    return { ...f, itemIds: newItemIds };
+    return { ...f, itemIds: f.itemIds.filter((id) => id !== itemId) };
   });
 }
 

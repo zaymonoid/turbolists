@@ -125,7 +125,7 @@ Deno.test("deleteItem - throws on missing item", () => {
 Deno.test("deleteItem - throws if item referenced by facet", () => {
   const items = createItem([], "01", "Headlamp");
   const facets: readonly Facet[] = [
-    { id: "f1", name: "Camp", itemIds: new Set(["01"]) },
+    { id: "f1", name: "Camp", itemIds: ["01"] },
   ];
   assertThrows(
     () => deleteItem(items, "01", facets),
@@ -137,8 +137,8 @@ Deno.test("deleteItem - throws if item referenced by facet", () => {
 Deno.test("deleteItem - error message includes referencing facet names", () => {
   const items = createItem([], "01", "Headlamp");
   const facets: readonly Facet[] = [
-    { id: "f1", name: "Camp", itemIds: new Set(["01"]) },
-    { id: "f2", name: "Climb", itemIds: new Set(["01"]) },
+    { id: "f1", name: "Camp", itemIds: ["01"] },
+    { id: "f2", name: "Climb", itemIds: ["01"] },
   ];
   assertThrows(
     () => deleteItem(items, "01", facets),

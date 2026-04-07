@@ -51,9 +51,7 @@ function loadFacet(raw: unknown): Facet {
   return {
     id: String(data.id ?? ""),
     name: String(data.name ?? ""),
-    itemIds: new Set(
-      Array.isArray(data.itemIds) ? data.itemIds.map(String) : [],
-    ),
+    itemIds: Array.isArray(data.itemIds) ? data.itemIds.map(String) : [],
   };
 }
 
@@ -63,20 +61,16 @@ function loadTrip(raw: unknown): Trip {
     id: String(data.id ?? ""),
     name: String(data.name ?? ""),
     createdAt: String(data.createdAt ?? ""),
-    facetIds: new Set(
-      Array.isArray(data.facetIds) ? data.facetIds.map(String) : [],
-    ),
-    checked: new Set(
-      Array.isArray(data.checked) ? data.checked.map(String) : [],
-    ),
+    facetIds: Array.isArray(data.facetIds) ? data.facetIds.map(String) : [],
+    checked: Array.isArray(data.checked) ? data.checked.map(String) : [],
   };
 }
 
 export function storeToJson(store: Store): string {
   const serializable = {
     items: store.items.map(serializeItem),
-    facets: store.facets.map(serializeFacet),
-    trips: store.trips.map(serializeTrip),
+    facets: store.facets,
+    trips: store.trips,
   };
   return `${JSON.stringify(serializable, null, 2)}\n`;
 }
@@ -87,22 +81,4 @@ function serializeItem(item: Item): Record<string, unknown> {
     result.notes = item.notes;
   }
   return result;
-}
-
-function serializeFacet(facet: Facet): Record<string, unknown> {
-  return {
-    id: facet.id,
-    name: facet.name,
-    itemIds: [...facet.itemIds].sort(),
-  };
-}
-
-function serializeTrip(trip: Trip): Record<string, unknown> {
-  return {
-    id: trip.id,
-    name: trip.name,
-    createdAt: trip.createdAt,
-    facetIds: [...trip.facetIds].sort(),
-    checked: [...trip.checked].sort(),
-  };
 }

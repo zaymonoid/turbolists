@@ -5,13 +5,12 @@ import type { Item } from "./item.ts";
 import type { Facet } from "./facet.ts";
 import type { Trip } from "./trip.ts";
 
-// Helpers to build test data
 function makeItem(id: string, name: string, notes?: string): Item {
   return notes !== undefined ? { id, name, notes } : { id, name };
 }
 
 function makeFacet(id: string, name: string, itemIds: string[]): Facet {
-  return { id, name, itemIds: new Set(itemIds) };
+  return { id, name, itemIds };
 }
 
 function makeTrip(
@@ -21,13 +20,7 @@ function makeTrip(
   facetIds: string[],
   checked: string[],
 ): Trip {
-  return {
-    id,
-    name,
-    createdAt,
-    facetIds: new Set(facetIds),
-    checked: new Set(checked),
-  };
+  return { id, name, createdAt, facetIds, checked };
 }
 
 Deno.test("emptyStore - returns empty collections", () => {
@@ -48,7 +41,7 @@ Deno.test("storeToJson - ends with newline", () => {
   assertEquals(json.endsWith("\n"), true);
 });
 
-Deno.test("storeToJson - serializes items", () => {
+Deno.test("storeToJson - serializes items with notes", () => {
   const store: Store = {
     items: [makeItem("i1", "Headlamp", "BD Spot")],
     facets: [],
@@ -70,25 +63,25 @@ Deno.test("storeToJson - omits notes when undefined", () => {
   assertEquals(parsed.items[0].hasOwnProperty("notes"), false);
 });
 
-Deno.test("storeToJson - serializes facet itemIds as sorted array", () => {
+Deno.test("storeToJson - preserves facet itemIds order", () => {
   const store: Store = {
     items: [],
     facets: [makeFacet("f1", "Trad", ["i3", "i1", "i2"])],
     trips: [],
   };
   const parsed = JSON.parse(storeToJson(store));
-  assertEquals(parsed.facets[0].itemIds, ["i1", "i2", "i3"]);
+  assertEquals(parsed.facets[0].itemIds, ["i3", "i1", "i2"]);
 });
 
-Deno.test("storeToJson - serializes trip Sets as sorted arrays", () => {
+Deno.test("storeToJson - preserves trip list order", () => {
   const store: Store = {
     items: [],
     facets: [],
     trips: [makeTrip("t1", "Test", "2025-01-01", ["f2", "f1"], ["i3", "i1"])],
   };
   const parsed = JSON.parse(storeToJson(store));
-  assertEquals(parsed.trips[0].facetIds, ["f1", "f2"]);
-  assertEquals(parsed.trips[0].checked, ["i1", "i3"]);
+  assertEquals(parsed.trips[0].facetIds, ["f2", "f1"]);
+  assertEquals(parsed.trips[0].checked, ["i3", "i1"]);
 });
 
 Deno.test("loadStore - loads empty store from empty object", () => {
@@ -115,9 +108,7 @@ Deno.test("loadStore - loads items", () => {
     trips: [],
   });
   assertEquals(store.items.length, 1);
-  assertEquals(store.items[0].id, "i1");
-  assertEquals(store.items[0].name, "Headlamp");
-  assertEquals(store.items[0].notes, "BD");
+  assertEquals(store.items[0], { id: "i1", name: "Headlamp", notes: "BD" });
 });
 
 Deno.test("loadStore - items without notes omit the field", () => {
@@ -129,18 +120,17 @@ Deno.test("loadStore - items without notes omit the field", () => {
   assertEquals(store.items[0].hasOwnProperty("notes"), false);
 });
 
-Deno.test("loadStore - converts facet itemIds array to Set", () => {
+Deno.test("loadStore - loads facet itemIds as array", () => {
   const store = loadStore({
     items: [],
     facets: [{ id: "f1", name: "Trad", itemIds: ["i1", "i2"] }],
     trips: [],
   });
-  assertEquals(store.facets[0].itemIds instanceof Set, true);
-  assertEquals(store.facets[0].itemIds.size, 2);
-  assertEquals(store.facets[0].itemIds.has("i1"), true);
+  assertEquals(Array.isArray(store.facets[0].itemIds), true);
+  assertEquals(store.facets[0].itemIds, ["i1", "i2"]);
 });
 
-Deno.test("loadStore - converts trip facetIds and checked arrays to Sets", () => {
+Deno.test("loadStore - loads trip facetIds and checked as arrays", () => {
   const store = loadStore({
     items: [],
     facets: [],
@@ -154,10 +144,8 @@ Deno.test("loadStore - converts trip facetIds and checked arrays to Sets", () =>
       },
     ],
   });
-  assertEquals(store.trips[0].facetIds instanceof Set, true);
-  assertEquals(store.trips[0].checked instanceof Set, true);
-  assertEquals(store.trips[0].facetIds.has("f1"), true);
-  assertEquals(store.trips[0].checked.size, 2);
+  assertEquals(store.trips[0].facetIds, ["f1"]);
+  assertEquals(store.trips[0].checked, ["i1", "i2"]);
 });
 
 Deno.test("loadStore - handles missing facet itemIds", () => {
@@ -166,7 +154,7 @@ Deno.test("loadStore - handles missing facet itemIds", () => {
     facets: [{ id: "f1", name: "Trad" }],
     trips: [],
   });
-  assertEquals(store.facets[0].itemIds.size, 0);
+  assertEquals(store.facets[0].itemIds, []);
 });
 
 Deno.test("loadStore - handles missing trip facetIds and checked", () => {
@@ -175,8 +163,8 @@ Deno.test("loadStore - handles missing trip facetIds and checked", () => {
     facets: [],
     trips: [{ id: "t1", name: "Test", createdAt: "2025-01-01" }],
   });
-  assertEquals(store.trips[0].facetIds.size, 0);
-  assertEquals(store.trips[0].checked.size, 0);
+  assertEquals(store.trips[0].facetIds, []);
+  assertEquals(store.trips[0].checked, []);
 });
 
 // Round-trip tests
@@ -184,7 +172,7 @@ Deno.test("loadStore - handles missing trip facetIds and checked", () => {
 Deno.test("round-trip: empty store", () => {
   const original = emptyStore();
   const roundTripped = loadStore(JSON.parse(storeToJson(original)));
-  assertStoreEqual(roundTripped, original);
+  assertEquals(roundTripped, original);
 });
 
 Deno.test("round-trip: store with data", () => {
@@ -202,7 +190,7 @@ Deno.test("round-trip: store with data", () => {
     ],
   };
   const roundTripped = loadStore(JSON.parse(storeToJson(original)));
-  assertStoreEqual(roundTripped, original);
+  assertEquals(roundTripped, original);
 });
 
 // Property-based round-trip
@@ -234,7 +222,7 @@ const arbStore = fc
       name: fc.string({ minLength: 1, maxLength: 20 }).filter((s) =>
         s.trim().length > 0
       ),
-      itemIds: fc.subarray(itemIds).map((ids) => new Set(ids)),
+      itemIds: fc.subarray(itemIds),
     });
     return fc
       .array(arbFacet, { minLength: 0, maxLength: 3 })
@@ -246,8 +234,8 @@ const arbStore = fc
             s.trim().length > 0
           ),
           createdAt: fc.string({ minLength: 1, maxLength: 20 }),
-          facetIds: fc.subarray(facetIds).map((ids) => new Set(ids)),
-          checked: fc.subarray(itemIds).map((ids) => new Set(ids)),
+          facetIds: fc.subarray(facetIds),
+          checked: fc.subarray(itemIds),
         });
         return fc
           .array(arbTrip, { minLength: 0, maxLength: 3 })
@@ -259,35 +247,7 @@ Deno.test("property: round-trip preserves all data", () => {
   fc.assert(
     fc.property(arbStore, (store) => {
       const roundTripped = loadStore(JSON.parse(storeToJson(store)));
-      assertStoreEqual(roundTripped, store);
+      assertEquals(roundTripped, store);
     }),
   );
 });
-
-// Helper to compare stores (Sets need special comparison)
-function assertStoreEqual(actual: Store, expected: Store): void {
-  assertEquals(actual.items, expected.items);
-  assertEquals(actual.facets.length, expected.facets.length);
-  for (let i = 0; i < actual.facets.length; i++) {
-    assertEquals(actual.facets[i].id, expected.facets[i].id);
-    assertEquals(actual.facets[i].name, expected.facets[i].name);
-    assertEquals(
-      new Set(actual.facets[i].itemIds),
-      new Set(expected.facets[i].itemIds),
-    );
-  }
-  assertEquals(actual.trips.length, expected.trips.length);
-  for (let i = 0; i < actual.trips.length; i++) {
-    assertEquals(actual.trips[i].id, expected.trips[i].id);
-    assertEquals(actual.trips[i].name, expected.trips[i].name);
-    assertEquals(actual.trips[i].createdAt, expected.trips[i].createdAt);
-    assertEquals(
-      new Set(actual.trips[i].facetIds),
-      new Set(expected.trips[i].facetIds),
-    );
-    assertEquals(
-      new Set(actual.trips[i].checked),
-      new Set(expected.trips[i].checked),
-    );
-  }
-}

@@ -1,12 +1,13 @@
 import { invariant } from "./util/invariant.ts";
+import { uniqueById } from "./util/unique.ts";
 import type { Facet } from "./facet.ts";
 
 export interface Trip {
   readonly id: string;
   readonly name: string;
   readonly createdAt: string;
-  readonly facetIds: ReadonlySet<string>;
-  readonly checked: ReadonlySet<string>;
+  readonly facetIds: readonly string[];
+  readonly checked: readonly string[];
 }
 
 export function createTrip(
@@ -20,13 +21,7 @@ export function createTrip(
     !trips.some((t) => t.id === id),
     `Trip with id "${id}" already exists`,
   );
-  return [...trips, {
-    id,
-    name,
-    createdAt,
-    facetIds: new Set(),
-    checked: new Set(),
-  }];
+  return [...trips, { id, name, createdAt, facetIds: [], checked: [] }];
 }
 
 export function addFacetToTrip(
@@ -45,9 +40,7 @@ export function addFacetToTrip(
   );
   return trips.map((t) => {
     if (t.id !== tripId) return t;
-    const newFacetIds = new Set(t.facetIds);
-    newFacetIds.add(facetId);
-    return { ...t, facetIds: newFacetIds };
+    return { ...t, facetIds: uniqueById([...t.facetIds, facetId]) };
   });
 }
 
@@ -62,9 +55,7 @@ export function removeFacetFromTrip(
   );
   return trips.map((t) => {
     if (t.id !== tripId) return t;
-    const newFacetIds = new Set(t.facetIds);
-    newFacetIds.delete(facetId);
-    return { ...t, facetIds: newFacetIds };
+    return { ...t, facetIds: t.facetIds.filter((id) => id !== facetId) };
   });
 }
 
@@ -79,13 +70,11 @@ export function toggleChecked(
   );
   return trips.map((t) => {
     if (t.id !== tripId) return t;
-    const newChecked = new Set(t.checked);
-    if (newChecked.has(itemId)) {
-      newChecked.delete(itemId);
-    } else {
-      newChecked.add(itemId);
-    }
-    return { ...t, checked: newChecked };
+    const hasItem = t.checked.includes(itemId);
+    const checked = hasItem
+      ? t.checked.filter((id) => id !== itemId)
+      : [...t.checked, itemId];
+    return { ...t, checked };
   });
 }
 
@@ -97,9 +86,7 @@ export function resetChecks(
     trips.some((t) => t.id === tripId),
     `Trip with id "${tripId}" not found`,
   );
-  return trips.map((t) =>
-    t.id === tripId ? { ...t, checked: new Set() } : t
-  );
+  return trips.map((t) => (t.id === tripId ? { ...t, checked: [] } : t));
 }
 
 export function deleteTrip(

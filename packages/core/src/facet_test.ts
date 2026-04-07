@@ -22,7 +22,7 @@ Deno.test("createFacet - creates facet with empty itemIds", () => {
   assertEquals(facets.length, 1);
   assertEquals(facets[0].id, "f1");
   assertEquals(facets[0].name, "Trad Rack");
-  assertEquals(facets[0].itemIds.size, 0);
+  assertEquals(facets[0].itemIds, []);
 });
 
 Deno.test("createFacet - appends to existing facets", () => {
@@ -59,7 +59,7 @@ Deno.test("renameFacet - preserves itemIds", () => {
   let facets = createFacet([], "f1", "Trad Rack");
   facets = addItemToFacet(facets, "f1", "i1", testItems);
   const renamed = renameFacet(facets, "f1", "Sport Rack");
-  assertEquals(renamed[0].itemIds.has("i1"), true);
+  assertEquals(renamed[0].itemIds.includes("i1"), true);
 });
 
 Deno.test("renameFacet - throws on missing facet", () => {
@@ -82,24 +82,21 @@ Deno.test("renameFacet - throws on empty name", () => {
 Deno.test("addItemToFacet - adds item to facet", () => {
   const facets = createFacet([], "f1", "Trad Rack");
   const updated = addItemToFacet(facets, "f1", "i1", testItems);
-  assertEquals(updated[0].itemIds.has("i1"), true);
-  assertEquals(updated[0].itemIds.size, 1);
+  assertEquals(updated[0].itemIds, ["i1"]);
 });
 
-Deno.test("addItemToFacet - adds multiple items", () => {
+Deno.test("addItemToFacet - adds multiple items preserving order", () => {
   let facets = createFacet([], "f1", "Trad Rack");
-  facets = addItemToFacet(facets, "f1", "i1", testItems);
   facets = addItemToFacet(facets, "f1", "i2", testItems);
-  assertEquals(facets[0].itemIds.size, 2);
-  assertEquals(facets[0].itemIds.has("i1"), true);
-  assertEquals(facets[0].itemIds.has("i2"), true);
+  facets = addItemToFacet(facets, "f1", "i1", testItems);
+  assertEquals(facets[0].itemIds, ["i2", "i1"]);
 });
 
 Deno.test("addItemToFacet - idempotent (adding same item twice)", () => {
   let facets = createFacet([], "f1", "Trad Rack");
   facets = addItemToFacet(facets, "f1", "i1", testItems);
   facets = addItemToFacet(facets, "f1", "i1", testItems);
-  assertEquals(facets[0].itemIds.size, 1);
+  assertEquals(facets[0].itemIds, ["i1"]);
 });
 
 Deno.test("addItemToFacet - throws on nonexistent item", () => {
@@ -124,23 +121,23 @@ Deno.test("addItemToFacet - preserves other facets", () => {
   facets = createFacet(facets, "f1", "Trad Rack");
   facets = createFacet(facets, "f2", "Camp Kitchen");
   facets = addItemToFacet(facets, "f1", "i1", testItems);
-  assertEquals(facets[1].itemIds.size, 0);
+  assertEquals(facets[1].itemIds, []);
 });
 
 Deno.test("removeItemFromFacet - removes item", () => {
   let facets = createFacet([], "f1", "Trad Rack");
   facets = addItemToFacet(facets, "f1", "i1", testItems);
   facets = removeItemFromFacet(facets, "f1", "i1");
-  assertEquals(facets[0].itemIds.size, 0);
+  assertEquals(facets[0].itemIds, []);
 });
 
-Deno.test("removeItemFromFacet - preserves other items", () => {
+Deno.test("removeItemFromFacet - preserves other items and order", () => {
   let facets = createFacet([], "f1", "Trad Rack");
   facets = addItemToFacet(facets, "f1", "i1", testItems);
   facets = addItemToFacet(facets, "f1", "i2", testItems);
-  facets = removeItemFromFacet(facets, "f1", "i1");
-  assertEquals(facets[0].itemIds.size, 1);
-  assertEquals(facets[0].itemIds.has("i2"), true);
+  facets = addItemToFacet(facets, "f1", "i3", testItems);
+  facets = removeItemFromFacet(facets, "f1", "i2");
+  assertEquals(facets[0].itemIds, ["i1", "i3"]);
 });
 
 Deno.test("removeItemFromFacet - throws on nonexistent facet", () => {
@@ -154,7 +151,7 @@ Deno.test("removeItemFromFacet - throws on nonexistent facet", () => {
 Deno.test("removeItemFromFacet - no-op for item not in facet", () => {
   const facets = createFacet([], "f1", "Trad Rack");
   const result = removeItemFromFacet(facets, "f1", "i1");
-  assertEquals(result[0].itemIds.size, 0);
+  assertEquals(result[0].itemIds, []);
 });
 
 Deno.test("deleteFacet - removes facet", () => {
@@ -206,7 +203,7 @@ Deno.test("property: add then remove item is identity on itemIds", () => {
       let facets = createFacet([], "f1", name);
       facets = addItemToFacet(facets, "f1", "i1", testItems);
       facets = removeItemFromFacet(facets, "f1", "i1");
-      assertEquals(facets[0].itemIds.size, 0);
+      assertEquals(facets[0].itemIds, []);
     }),
   );
 });
@@ -220,7 +217,7 @@ Deno.test("property: adding same item multiple times is idempotent", () => {
         for (let i = 0; i < count; i++) {
           facets = addItemToFacet(facets, "f1", "i1", testItems);
         }
-        assertEquals(facets[0].itemIds.size, 1);
+        assertEquals(facets[0].itemIds, ["i1"]);
       },
     ),
   );

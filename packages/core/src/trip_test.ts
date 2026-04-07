@@ -12,8 +12,8 @@ import {
 import type { Facet } from "./facet.ts";
 
 const testFacets: readonly Facet[] = [
-  { id: "f1", name: "Trad Rack", itemIds: new Set(["i1", "i2"]) },
-  { id: "f2", name: "Camp Kitchen", itemIds: new Set(["i3"]) },
+  { id: "f1", name: "Trad Rack", itemIds: ["i1", "i2"] },
+  { id: "f2", name: "Camp Kitchen", itemIds: ["i3"] },
 ];
 
 Deno.test("createTrip - creates trip", () => {
@@ -22,8 +22,8 @@ Deno.test("createTrip - creates trip", () => {
   assertEquals(trips[0].id, "t1");
   assertEquals(trips[0].name, "Squamish Weekend");
   assertEquals(trips[0].createdAt, "2025-07-15");
-  assertEquals(trips[0].facetIds.size, 0);
-  assertEquals(trips[0].checked.size, 0);
+  assertEquals(trips[0].facetIds, []);
+  assertEquals(trips[0].checked, []);
 });
 
 Deno.test("createTrip - appends to existing trips", () => {
@@ -53,22 +53,21 @@ Deno.test("createTrip - throws on duplicate id", () => {
 Deno.test("addFacetToTrip - adds facet", () => {
   const trips = createTrip([], "t1", "Squamish", "2025-07-15");
   const updated = addFacetToTrip(trips, "t1", "f1", testFacets);
-  assertEquals(updated[0].facetIds.has("f1"), true);
-  assertEquals(updated[0].facetIds.size, 1);
+  assertEquals(updated[0].facetIds, ["f1"]);
 });
 
-Deno.test("addFacetToTrip - adds multiple facets", () => {
+Deno.test("addFacetToTrip - adds multiple facets preserving order", () => {
   let trips = createTrip([], "t1", "Squamish", "2025-07-15");
-  trips = addFacetToTrip(trips, "t1", "f1", testFacets);
   trips = addFacetToTrip(trips, "t1", "f2", testFacets);
-  assertEquals(trips[0].facetIds.size, 2);
+  trips = addFacetToTrip(trips, "t1", "f1", testFacets);
+  assertEquals(trips[0].facetIds, ["f2", "f1"]);
 });
 
 Deno.test("addFacetToTrip - idempotent", () => {
   let trips = createTrip([], "t1", "Squamish", "2025-07-15");
   trips = addFacetToTrip(trips, "t1", "f1", testFacets);
   trips = addFacetToTrip(trips, "t1", "f1", testFacets);
-  assertEquals(trips[0].facetIds.size, 1);
+  assertEquals(trips[0].facetIds, ["f1"]);
 });
 
 Deno.test("addFacetToTrip - throws on nonexistent facet", () => {
@@ -92,16 +91,15 @@ Deno.test("removeFacetFromTrip - removes facet", () => {
   let trips = createTrip([], "t1", "Squamish", "2025-07-15");
   trips = addFacetToTrip(trips, "t1", "f1", testFacets);
   trips = removeFacetFromTrip(trips, "t1", "f1");
-  assertEquals(trips[0].facetIds.size, 0);
+  assertEquals(trips[0].facetIds, []);
 });
 
-Deno.test("removeFacetFromTrip - preserves other facets", () => {
+Deno.test("removeFacetFromTrip - preserves other facets and order", () => {
   let trips = createTrip([], "t1", "Squamish", "2025-07-15");
   trips = addFacetToTrip(trips, "t1", "f1", testFacets);
   trips = addFacetToTrip(trips, "t1", "f2", testFacets);
   trips = removeFacetFromTrip(trips, "t1", "f1");
-  assertEquals(trips[0].facetIds.size, 1);
-  assertEquals(trips[0].facetIds.has("f2"), true);
+  assertEquals(trips[0].facetIds, ["f2"]);
 });
 
 Deno.test("removeFacetFromTrip - throws on nonexistent trip", () => {
@@ -115,24 +113,22 @@ Deno.test("removeFacetFromTrip - throws on nonexistent trip", () => {
 Deno.test("toggleChecked - checks an item", () => {
   const trips = createTrip([], "t1", "Squamish", "2025-07-15");
   const toggled = toggleChecked(trips, "t1", "i1");
-  assertEquals(toggled[0].checked.has("i1"), true);
-  assertEquals(toggled[0].checked.size, 1);
+  assertEquals(toggled[0].checked, ["i1"]);
 });
 
 Deno.test("toggleChecked - unchecks a checked item", () => {
   let trips = createTrip([], "t1", "Squamish", "2025-07-15");
   trips = toggleChecked(trips, "t1", "i1");
   trips = toggleChecked(trips, "t1", "i1");
-  assertEquals(trips[0].checked.size, 0);
+  assertEquals(trips[0].checked, []);
 });
 
-Deno.test("toggleChecked - preserves other checked items", () => {
+Deno.test("toggleChecked - preserves other checked items and order", () => {
   let trips = createTrip([], "t1", "Squamish", "2025-07-15");
   trips = toggleChecked(trips, "t1", "i1");
   trips = toggleChecked(trips, "t1", "i2");
   trips = toggleChecked(trips, "t1", "i1");
-  assertEquals(trips[0].checked.size, 1);
-  assertEquals(trips[0].checked.has("i2"), true);
+  assertEquals(trips[0].checked, ["i2"]);
 });
 
 Deno.test("toggleChecked - throws on nonexistent trip", () => {
@@ -148,13 +144,13 @@ Deno.test("resetChecks - clears all checked items", () => {
   trips = toggleChecked(trips, "t1", "i1");
   trips = toggleChecked(trips, "t1", "i2");
   trips = resetChecks(trips, "t1");
-  assertEquals(trips[0].checked.size, 0);
+  assertEquals(trips[0].checked, []);
 });
 
 Deno.test("resetChecks - no-op on already empty", () => {
   const trips = createTrip([], "t1", "Squamish", "2025-07-15");
   const reset = resetChecks(trips, "t1");
-  assertEquals(reset[0].checked.size, 0);
+  assertEquals(reset[0].checked, []);
 });
 
 Deno.test("resetChecks - throws on nonexistent trip", () => {
@@ -198,13 +194,13 @@ Deno.test("property: toggle is self-inverse", () => {
         let trips = createTrip([], "t1", "Test", "2025-01-01");
         trips = toggleChecked(trips, "t1", itemId);
         trips = toggleChecked(trips, "t1", itemId);
-        assertEquals(trips[0].checked.size, 0);
+        assertEquals(trips[0].checked, []);
       },
     ),
   );
 });
 
-Deno.test("property: resetChecks always yields empty checked set", () => {
+Deno.test("property: resetChecks always yields empty checked", () => {
   fc.assert(
     fc.property(
       fc.array(fc.string({ minLength: 1, maxLength: 10 }), {
@@ -217,7 +213,7 @@ Deno.test("property: resetChecks always yields empty checked set", () => {
           trips = toggleChecked(trips, "t1", id);
         }
         trips = resetChecks(trips, "t1");
-        assertEquals(trips[0].checked.size, 0);
+        assertEquals(trips[0].checked, []);
       },
     ),
   );
@@ -231,7 +227,7 @@ Deno.test("property: add then remove facet is identity on facetIds", () => {
         let trips = createTrip([], "t1", "Test", "2025-01-01");
         trips = addFacetToTrip(trips, "t1", facetId, testFacets);
         trips = removeFacetFromTrip(trips, "t1", facetId);
-        assertEquals(trips[0].facetIds.size, 0);
+        assertEquals(trips[0].facetIds, []);
       },
     ),
   );

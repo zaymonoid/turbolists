@@ -44,7 +44,7 @@ export function deleteItem(
     items.some((i) => i.id === id),
     `Item with id "${id}" not found`,
   );
-  const referencingFacets = facets.filter((f) => f.itemIds.has(id));
+  const referencingFacets = facets.filter((f) => f.itemIds.includes(id));
   invariant(
     referencingFacets.length === 0,
     `Cannot delete item "${id}": referenced by facets: ${referencingFacets.map((f) => f.name).join(", ")}`,

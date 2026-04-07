@@ -5,9 +5,9 @@ import type { Facet } from "./facet.ts";
 import type { Trip } from "./trip.ts";
 
 const facets: readonly Facet[] = [
-  { id: "f1", name: "Trad Rack", itemIds: new Set(["i1", "i2", "i3"]) },
-  { id: "f2", name: "Camp Kitchen", itemIds: new Set(["i3", "i4"]) },
-  { id: "f3", name: "Sleep System", itemIds: new Set(["i5"]) },
+  { id: "f1", name: "Trad Rack", itemIds: ["i1", "i2", "i3"] },
+  { id: "f2", name: "Camp Kitchen", itemIds: ["i3", "i4"] },
+  { id: "f3", name: "Sleep System", itemIds: ["i5"] },
 ];
 
 function makeTrip(
@@ -18,8 +18,8 @@ function makeTrip(
     id: "t1",
     name: "Test",
     createdAt: "2025-01-01",
-    facetIds: new Set(facetIds),
-    checked: new Set(checked),
+    facetIds,
+    checked,
   };
 }
 
@@ -40,7 +40,6 @@ Deno.test("tripChecklist - single facet returns its items", () => {
 Deno.test("tripChecklist - union of multiple facets deduplicates", () => {
   const trip = makeTrip(["f1", "f2"]);
   const checklist = tripChecklist(trip, facets);
-  // f1 has i1,i2,i3 and f2 has i3,i4 — union is i1,i2,i3,i4
   assertEquals(checklist, new Set(["i1", "i2", "i3", "i4"]));
 });
 
@@ -79,14 +78,12 @@ Deno.test("packProgress - all checked", () => {
 Deno.test("packProgress - partial checked", () => {
   const trip = makeTrip(["f1", "f2"], ["i1", "i3"]);
   const progress = packProgress(trip, facets);
-  // checklist is i1,i2,i3,i4. checked i1,i3 are in checklist = 2
   assertEquals(progress, { checked: 2, total: 4 });
 });
 
 Deno.test("packProgress - checked items not in checklist are ignored", () => {
   const trip = makeTrip(["f3"], ["i1", "i5"]);
   const progress = packProgress(trip, facets);
-  // checklist is just i5. only i5 is in checked ∩ checklist
   assertEquals(progress, { checked: 1, total: 1 });
 });
 
@@ -116,7 +113,7 @@ Deno.test("itemUsage - maps items to their facets", () => {
 
   assertEquals(usage.get("i1"), new Set(["f1"]));
   assertEquals(usage.get("i2"), new Set(["f1"]));
-  assertEquals(usage.get("i3"), new Set(["f1", "f2"])); // shared item
+  assertEquals(usage.get("i3"), new Set(["f1", "f2"]));
   assertEquals(usage.get("i4"), new Set(["f2"]));
   assertEquals(usage.get("i5"), new Set(["f3"]));
 });
