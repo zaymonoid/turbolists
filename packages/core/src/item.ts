@@ -1,15 +1,15 @@
 import { invariant } from "./util/invariant.ts";
-import type { Facet } from "./facet.ts";
+import type { ItemId } from "./ids.ts";
 
 export interface Item {
-  readonly id: string;
+  readonly id: ItemId;
   readonly name: string;
   readonly notes?: string;
 }
 
 export function createItem(
   items: readonly Item[],
-  id: string,
+  id: ItemId,
   name: string,
   notes?: string,
 ): readonly Item[] {
@@ -24,7 +24,7 @@ export function createItem(
 
 export function renameItem(
   items: readonly Item[],
-  id: string,
+  id: ItemId,
   name: string,
 ): readonly Item[] {
   invariant(name.trim().length > 0, "Item name must not be empty");
@@ -37,22 +37,16 @@ export function renameItem(
 
 export function deleteItem(
   items: readonly Item[],
-  id: string,
-  facets: readonly Facet[],
+  id: ItemId,
 ): readonly Item[] {
   invariant(
     items.some((i) => i.id === id),
     `Item with id "${id}" not found`,
   );
-  const referencingFacets = facets.filter((f) => f.itemIds.includes(id));
-  invariant(
-    referencingFacets.length === 0,
-    `Cannot delete item "${id}": referenced by facets: ${referencingFacets.map((f) => f.name).join(", ")}`,
-  );
   return items.filter((i) => i.id !== id);
 }
 
-export function findItem(items: readonly Item[], id: string): Item {
+export function findItem(items: readonly Item[], id: ItemId): Item {
   const item = items.find((i) => i.id === id);
   invariant(item, `Item with id "${id}" not found`);
   return item;

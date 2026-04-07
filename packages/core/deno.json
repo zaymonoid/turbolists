@@ -2,11 +2,13 @@
   "name": "@turbolists/core",
   "version": "0.0.0",
   "exports": {
+    "./ids": "./src/ids.ts",
     "./item": "./src/item.ts",
     "./facet": "./src/facet.ts",
     "./trip": "./src/trip.ts",
     "./store": "./src/store.ts",
     "./views": "./src/views.ts",
+    "./dedupe": "./src/util/dedupe.ts",
     "./invariant": "./src/util/invariant.ts"
   },
   "imports": {

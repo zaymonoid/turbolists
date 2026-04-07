@@ -1,10 +1,10 @@
 /**
  * Returns a new array with duplicates removed, preserving the order
- * of first occurrence.
+ * of first occurrence. Generic over branded string types.
  */
-export function uniqueById(ids: readonly string[]): readonly string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
+export function dedupe<T extends string>(ids: readonly T[]): readonly T[] {
+  const seen = new Set<T>();
+  const result: T[] = [];
   for (const id of ids) {
     if (!seen.has(id)) {
       seen.add(id);
