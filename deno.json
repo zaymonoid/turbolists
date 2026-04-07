@@ -1,0 +1,5 @@
+{
+  "workspace": ["./packages/core"],
+  "nodeModulesDir": "auto",
+  "lock": false
+}

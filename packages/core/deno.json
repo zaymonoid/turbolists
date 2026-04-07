@@ -1,0 +1,21 @@
+{
+  "name": "@turbolists/core",
+  "version": "0.0.0",
+  "exports": {
+    "./item": "./src/item.ts",
+    "./facet": "./src/facet.ts",
+    "./trip": "./src/trip.ts",
+    "./store": "./src/store.ts",
+    "./views": "./src/views.ts",
+    "./invariant": "./src/util/invariant.ts"
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/ulid": "jsr:@std/ulid@1",
+    "fast-check": "npm:fast-check@4"
+  },
+  "tasks": {
+    "test": "deno test src/",
+    "typecheck": "deno check src/"
+  }
+}
