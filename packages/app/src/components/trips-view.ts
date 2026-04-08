@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement } from "lit/decorators.js";
+import { animate } from "@lit-labs/motion";
 import { fromStore } from "@zaymonoid/katha/lit";
 import { store } from "../store/index.ts";
 import type { AppState } from "../store/state.ts";
@@ -335,6 +336,7 @@ export class TripsView extends LitElement {
       gap: 14px;
       border-top: 1px solid var(--line, #2a2e26);
       cursor: pointer;
+      transition: opacity 200ms ease;
     }
     .check-box {
       width: 18px;
@@ -343,6 +345,10 @@ export class TripsView extends LitElement {
       flex-shrink: 0;
       position: relative;
       border-radius: 2px;
+      transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+    }
+    .check-box:active {
+      transform: scale(0.85);
     }
     .check-row.checked .check-box {
       background: var(--accent, #d4ff3a);
@@ -365,6 +371,7 @@ export class TripsView extends LitElement {
       font-weight: 400;
       color: var(--ink, #e8e6df);
       flex: 1;
+      transition: color 200ms ease;
     }
     .check-row.checked .check-label {
       color: var(--ink-faint, #555852);
@@ -560,6 +567,7 @@ export class TripsView extends LitElement {
                   return html`
                     <div
                       class="check-row ${checked ? "checked" : ""}"
+                      ${animate({ keyframeOptions: { duration: 300, easing: 'ease-in-out' }, skipInitial: true })}
                       @click=${() => store.put({ id: "trip/toggle-checked", data: { tripId: trip.id, itemId } })}
                     >
                       <div class="check-box"></div>

@@ -37,8 +37,13 @@ fn write_store(app_handle: tauri::AppHandle, json: String) -> Result<(), String>
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init());
+
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_haptics::init());
+
+    builder
         .invoke_handler(tauri::generate_handler![read_store, write_store])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

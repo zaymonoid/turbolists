@@ -8,9 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@lit-labs/motion':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@tauri-apps/api':
         specifier: ^2
         version: 2.10.1
+      '@tauri-apps/plugin-haptics':
+        specifier: ^2.3.2
+        version: 2.3.2
       '@tauri-apps/plugin-opener':
         specifier: ^2
         version: 2.5.3
@@ -197,6 +203,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@lit-labs/motion@1.1.0':
+    resolution: {integrity: sha512-ZIVr97dCfOCXWwHczsZ/46BCia+uEjZ15sDTo2cY9L61sWWjngvV80CXn2NPjcb/cl7LJpPJXhFOLYNlXKzKJA==}
 
   '@lit-labs/ssr-dom-shim@1.5.1':
     resolution: {integrity: sha512-Aou5UdlSpr5whQe8AA/bZG0jMj96CoJIWbGfZ91qieWu5AWUMKw8VR/pAkQkJYvBNhmCcWnZlyyk5oze8JIqYA==}
@@ -424,6 +433,9 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
+  '@tauri-apps/plugin-haptics@2.3.2':
+    resolution: {integrity: sha512-TqvBR5JoPodDQWPXsNymmyqp37dOpunZOdVVbx5xOAxki7rVwiCMvoEPdtJQNIrU+dQDfkQYZ2oDBVOu4hf+ig==}
+
   '@tauri-apps/plugin-opener@2.5.3':
     resolution: {integrity: sha512-CCcUltXMOfUEArbf3db3kCE7Ggy1ExBEBl51Ko2ODJ6GDYHRp1nSNlQm5uNCFY5k7/ufaK5Ib3Du/Zir19IYQQ==}
 
@@ -573,6 +585,9 @@ packages:
       yaml:
         optional: true
 
+  wobble@1.5.1:
+    resolution: {integrity: sha512-vQD1uu0yXhZWfQJKVf2UVNb3AVnD0qXAbcIqG6Aw02ABLVm77xz6KcLuduWSwOiOMNh8TjZqouZsHTJWTdLwVQ==}
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.25.12':
@@ -652,6 +667,11 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.12':
     optional: true
+
+  '@lit-labs/motion@1.1.0':
+    dependencies:
+      lit: 3.3.2
+      wobble: 1.5.1
 
   '@lit-labs/ssr-dom-shim@1.5.1': {}
 
@@ -784,6 +804,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.10.1
       '@tauri-apps/cli-win32-ia32-msvc': 2.10.1
       '@tauri-apps/cli-win32-x64-msvc': 2.10.1
+
+  '@tauri-apps/plugin-haptics@2.3.2':
+    dependencies:
+      '@tauri-apps/api': 2.10.1
 
   '@tauri-apps/plugin-opener@2.5.3':
     dependencies:
@@ -935,3 +959,5 @@ snapshots:
       tinyglobby: 0.2.15
     optionalDependencies:
       fsevents: 2.3.3
+
+  wobble@1.5.1: {}

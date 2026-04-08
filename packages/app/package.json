@@ -10,7 +10,9 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@lit-labs/motion": "^1.1.0",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-haptics": "^2.3.2",
     "@tauri-apps/plugin-opener": "^2",
     "@zaymonoid/katha": "^0.1.1",
     "effect": "^3.21.0",
