@@ -1,3 +1,4 @@
+import { produce } from "immer";
 import type { Reducer } from "@zaymonoid/katha";
 import type { AppState, AppAction } from "./state.ts";
 import { createItem, renameItem, deleteItem } from "@turbolists/core/item";
@@ -18,123 +19,92 @@ import {
   resetChecks,
 } from "@turbolists/core/trip";
 
-function withData(
-  state: AppState,
-  update: Partial<AppState["data"]>,
-): AppState {
-  return { ...state, data: { ...state.data, ...update } };
-}
-
 export const appReducer: Reducer<AppState, AppAction> = (state, action) => {
   switch (action.id) {
     // Items
     case "item/create":
-      return withData(state, {
-        items: createItem(state.data.items, action.data.id, action.data.name),
+      return produce(state, (draft) => {
+        draft.data.items = createItem(state.data.items, action.data.id, action.data.name);
       });
     case "item/rename":
-      return withData(state, {
-        items: renameItem(state.data.items, action.data.id, action.data.name),
+      return produce(state, (draft) => {
+        draft.data.items = renameItem(state.data.items, action.data.id, action.data.name);
       });
     case "item/delete":
-      return withData(state, {
-        items: deleteItem(state.data.items, action.data.id),
+      return produce(state, (draft) => {
+        draft.data.items = deleteItem(state.data.items, action.data.id);
       });
 
     // Facets
     case "facet/create":
-      return withData(state, {
-        facets: createFacet(
-          state.data.facets,
-          action.data.id,
-          action.data.name,
-        ),
+      return produce(state, (draft) => {
+        draft.data.facets = createFacet(state.data.facets, action.data.id, action.data.name);
       });
     case "facet/rename":
-      return withData(state, {
-        facets: renameFacet(
-          state.data.facets,
-          action.data.id,
-          action.data.name,
-        ),
+      return produce(state, (draft) => {
+        draft.data.facets = renameFacet(state.data.facets, action.data.id, action.data.name);
       });
     case "facet/delete":
-      return withData(state, {
-        facets: deleteFacet(state.data.facets, action.data.id),
+      return produce(state, (draft) => {
+        draft.data.facets = deleteFacet(state.data.facets, action.data.id);
       });
     case "facet/add-item":
-      return withData(state, {
-        facets: addItemToFacet(
-          state.data.facets,
-          action.data.facetId,
-          action.data.itemId,
-        ),
+      return produce(state, (draft) => {
+        draft.data.facets = addItemToFacet(state.data.facets, action.data.facetId, action.data.itemId);
       });
     case "facet/remove-item":
-      return withData(state, {
-        facets: removeItemFromFacet(
-          state.data.facets,
-          action.data.facetId,
-          action.data.itemId,
-        ),
+      return produce(state, (draft) => {
+        draft.data.facets = removeItemFromFacet(state.data.facets, action.data.facetId, action.data.itemId);
       });
 
     // Trips
     case "trip/create":
-      return withData(state, {
-        trips: createTrip(
-          state.data.trips,
-          action.data.id,
-          action.data.name,
-          action.data.createdAt,
-        ),
+      return produce(state, (draft) => {
+        draft.data.trips = createTrip(state.data.trips, action.data.id, action.data.name, action.data.createdAt);
       });
     case "trip/rename":
-      return withData(state, {
-        trips: renameTrip(state.data.trips, action.data.id, action.data.name),
+      return produce(state, (draft) => {
+        draft.data.trips = renameTrip(state.data.trips, action.data.id, action.data.name);
       });
     case "trip/delete":
-      return { ...withData(state, {
-        trips: deleteTrip(state.data.trips, action.data.id),
-      }), selectedTripId: state.selectedTripId === action.data.id ? null : state.selectedTripId };
+      return produce(state, (draft) => {
+        draft.data.trips = deleteTrip(state.data.trips, action.data.id);
+        if (state.selectedTripId === action.data.id) {
+          draft.selectedTripId = null;
+        }
+      });
     case "trip/add-facet":
-      return withData(state, {
-        trips: addFacetToTrip(
-          state.data.trips,
-          action.data.tripId,
-          action.data.facetId,
-        ),
+      return produce(state, (draft) => {
+        draft.data.trips = addFacetToTrip(state.data.trips, action.data.tripId, action.data.facetId);
       });
     case "trip/remove-facet":
-      return withData(state, {
-        trips: removeFacetFromTrip(
-          state.data.trips,
-          action.data.tripId,
-          action.data.facetId,
-        ),
+      return produce(state, (draft) => {
+        draft.data.trips = removeFacetFromTrip(state.data.trips, action.data.tripId, action.data.facetId);
       });
     case "trip/toggle-checked":
-      return withData(state, {
-        trips: toggleChecked(
-          state.data.trips,
-          action.data.tripId,
-          action.data.itemId,
-        ),
+      return produce(state, (draft) => {
+        draft.data.trips = toggleChecked(state.data.trips, action.data.tripId, action.data.itemId);
       });
     case "trip/reset-checks":
-      return withData(state, {
-        trips: resetChecks(state.data.trips, action.data.tripId),
+      return produce(state, (draft) => {
+        draft.data.trips = resetChecks(state.data.trips, action.data.tripId);
       });
 
     // Navigation
     case "nav/set-view":
-      return { ...state, view: action.data.view };
+      return produce(state, (draft) => {
+        draft.view = action.data.view;
+      });
     case "nav/select-trip":
-      return { ...state, selectedTripId: action.data.tripId };
+      return produce(state, (draft) => {
+        draft.selectedTripId = action.data.tripId;
+      });
 
     // Persistence
     case "store/loaded":
-      return { ...state, data: action.data.store };
+      return produce(state, (draft) => {
+        draft.data = action.data.store;
+      });
 
     default:
       return undefined;

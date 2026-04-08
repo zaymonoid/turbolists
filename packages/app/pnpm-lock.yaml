@@ -20,6 +20,9 @@ importers:
       effect:
         specifier: ^3.21.0
         version: 3.21.0
+      immer:
+        specifier: ^11.1.4
+        version: 11.1.4
       lit:
         specifier: ^3
         version: 3.3.2
@@ -474,6 +477,9 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
+  immer@11.1.4:
+    resolution: {integrity: sha512-XREFCPo6ksxVzP4E0ekD5aMdf8WMwmdNaz6vuvxgI40UaEiu6q3p8X52aU6GdyvLY3XXX/8R7JOTXStz/nBbRw==}
+
   layerr@3.0.0:
     resolution: {integrity: sha512-tv754Ki2dXpPVApOrjTyRo4/QegVb9eVFq4mjqp4+NM5NaX7syQvN5BBNfV/ZpAHCEHV24XdUVrBAoka4jt3pA==}
 
@@ -840,6 +846,8 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
+
+  immer@11.1.4: {}
 
   layerr@3.0.0: {}
 
