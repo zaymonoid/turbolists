@@ -42,6 +42,25 @@ export function packProgress(
   return { checked, total: checklist.size };
 }
 
+export function facetUsage(
+  facets: readonly Facet[],
+  trips: readonly Trip[],
+): ReadonlyMap<FacetId, number> {
+  const usage = new Map<FacetId, number>();
+  for (const facet of facets) {
+    usage.set(facet.id, 0);
+  }
+  for (const trip of trips) {
+    for (const facetId of trip.facetIds) {
+      const count = usage.get(facetId);
+      if (count !== undefined) {
+        usage.set(facetId, count + 1);
+      }
+    }
+  }
+  return usage;
+}
+
 export function itemUsage(
   items: readonly Item[],
   facets: readonly Facet[],

@@ -1,5 +1,10 @@
 {
   "workspace": ["./packages/core", "./packages/app"],
   "nodeModulesDir": "auto",
-  "lock": false
+  "lock": false,
+  "tasks": {
+    "dev": "cd packages/app && pnpm tauri dev",
+    "test": "cd packages/core && deno test src/",
+    "typecheck": "cd packages/core && deno check src/"
+  }
 }

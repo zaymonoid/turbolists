@@ -18,6 +18,15 @@ export default defineConfig(async () => ({
     ],
   },
 
+  esbuild: {
+    tsconfigRaw: {
+      compilerOptions: {
+        experimentalDecorators: true,
+        useDefineForClassFields: false,
+      },
+    },
+  },
+
   clearScreen: false,
   server: {
     port: 1420,

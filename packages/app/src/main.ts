@@ -1,23 +1,12 @@
-import { getStore, initStore } from "./state.ts";
+import { store } from "./store/index.ts";
+import { readStore } from "./persist.ts";
+import { loadStore } from "@turbolists/core/store";
+import "./components/app-shell.ts";
 
-async function main() {
-  const app = document.getElementById("app")!;
-
-  try {
-    await initStore();
-    const store = getStore();
-    app.innerHTML = `
-      <h1>Turbolists</h1>
-      <p>Store loaded successfully.</p>
-      <ul>
-        <li>Items: ${store.items.length}</li>
-        <li>Facets: ${store.facets.length}</li>
-        <li>Trips: ${store.trips.length}</li>
-      </ul>
-    `;
-  } catch (e) {
-    app.innerHTML = `<h1>Turbolists</h1><p>Error loading store: ${e}</p>`;
-  }
+async function boot() {
+  const raw = await readStore();
+  const data = loadStore(JSON.parse(raw));
+  store.put({ id: "store/loaded", data: { store: data } });
 }
 
-main();
+boot();
