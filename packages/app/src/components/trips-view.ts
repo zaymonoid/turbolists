@@ -6,6 +6,7 @@ import type { AppState } from "../store/state.ts";
 import { newTripId } from "../ids.ts";
 import type { Trip } from "@turbolists/core/trip";
 import { packProgress } from "@turbolists/core/views";
+import { AnimatedNumber } from "../animated-number.ts";
 
 @customElement("trips-view")
 export class TripsView extends LitElement {
@@ -389,6 +390,9 @@ export class TripsView extends LitElement {
     .actions button:hover { border-color: var(--warn, #ff7a3a); color: var(--warn, #ff7a3a); }
   `;
 
+  private _animatedChecked = new AnimatedNumber(this);
+  private _animatedTotal = new AnimatedNumber(this);
+
   private trips = fromStore(this, store, (s: AppState) => s.data.trips);
   private facets = fromStore(this, store, (s: AppState) => s.data.facets);
   private items = fromStore(this, store, (s: AppState) => s.data.items);
@@ -478,6 +482,9 @@ export class TripsView extends LitElement {
     const pct = progress.total > 0 ? progress.checked / progress.total : 0;
     const facetMap = new Map(facets.map((f) => [f.id, f]));
 
+    this._animatedChecked.target = progress.checked;
+    this._animatedTotal.target = progress.total;
+
     return html`
       <div class="detail-header">
         <button class="back-link" @click=${() => store.put({ id: "nav/select-trip", data: { tripId: null } })}>
@@ -490,8 +497,8 @@ export class TripsView extends LitElement {
 
       <div class="pack-progress-block">
         <div class="pack-counter">
-          <span class="big">${progress.checked}</span>
-          <span class="of">/ ${progress.total}</span>
+          <span class="big">${Math.round(this._animatedChecked.value)}</span>
+          <span class="of">/ ${Math.round(this._animatedTotal.value)}</span>
           <span class="label">PACKED</span>
         </div>
         <div class="big-progress-bar">
