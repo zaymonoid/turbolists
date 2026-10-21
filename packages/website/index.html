@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Build your gear once as reusable kits. Pick the kits a trip needs and TurboLists merges them into one packing checklist, with shared items listed only once.">
+<title>TurboLists</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Archivo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one narrow column, a phone-like demo panel in the hero, full-width hairline bands below. Single dark theme: it is the app's own look. */
+  :root {
+    --bg: #0e0f0c;
+    --panel: #161814;
+    --panel-2: #1d201b;
+    --line: #2a2e26;
+    --line-bright: #3a3f35;
+    --ink: #e8e6df;
+    --ink-dim: #8a8c82;
+    --ink-faint: #555852;
+    --accent: #d4ff3a;
+    --accent-dim: #7a8f1f;
+    --warn: #ff7a3a;
+    --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  a { color: inherit; }
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink-dim);
+  }
+  .mono .accent { color: var(--accent); }
+
+  /* ---- Nav ---- */
+  nav {
+    border-bottom: 1px solid var(--line);
+  }
+  nav .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 18px;
+    gap: 16px;
+  }
+  .logo {
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo i {
+    width: 14px; height: 14px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 10px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--line-bright);
+    background: none;
+    color: var(--ink);
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn.primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- Hero ---- */
+  .hero .wrap {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    align-items: center;
+    padding-block: 72px 64px;
+  }
+  .hero h1 {
+    font-weight: 900;
+    font-size: clamp(42px, 6vw, 72px);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    margin: 14px 0 22px;
+    text-wrap: balance;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .hero p.lede {
+    font-size: 18px;
+    color: var(--ink-dim);
+    max-width: 30em;
+    margin: 0 0 28px;
+  }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .cta-note { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+
+  /* ---- Demo panel ---- */
+  .demo {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  .demo-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .demo-title { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 7px 11px;
+    border-radius: 4px;
+    border: 1px solid var(--line-bright);
+    background: var(--panel-2);
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .chip[aria-pressed="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--panel-2));
+  }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .progress strong { color: var(--ink); font-weight: 500; font-size: 13px; }
+  .bar { height: 2px; background: var(--line); position: relative; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .3s; }
+  .list {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column;
+    max-height: 280px;
+    overflow-y: auto;
+    border-top: 1px solid var(--line);
+  }
+  .list li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .list li .box {
+    width: 14px; height: 14px; flex-shrink: 0;
+    border: 1.5px solid var(--line-bright);
+    border-radius: 2px;
+  }
+  .list li.done .box { background: var(--accent); border-color: var(--accent); }
+  .list li.done .name { color: var(--ink-faint); text-decoration: line-through; }
+  .list li .name { flex: 1; min-width: 0; }
+  .list li .from {
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--ink-faint); letter-spacing: 0.08em; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .list li .from.merged { color: var(--accent-dim); }
+  .empty {
+    padding: 28px 8px; text-align: center;
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint);
+  }
+  .dedupe {
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .dedupe b { color: var(--accent); font-weight: 500; }
+
+  /* ---- Bands ---- */
+  section.band { border-top: 1px solid var(--line); }
+  section.band .wrap { padding-block: 64px; }
+  h2 {
+    font-weight: 900;
+    font-size: clamp(28px, 3.6vw, 40px);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin: 10px 0 14px;
+    text-wrap: balance;
+  }
+  .sub { color: var(--ink-dim); font-size: 17px; max-width: 34em; margin: 0; }
+
+  /* How it works: the three screens the app actually has */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-top: 36px;
+  }
+  .step {
+    background: var(--bg);
+    padding: 24px 22px 26px;
+    min-width: 0;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .step h3 {
+    margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .step p { margin: 0; color: var(--ink-dim); font-size: 15px; }
+  .step .ex {
+    margin-top: 6px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint);
+    line-height: 1.7;
+  }
+  .step .ex span { color: var(--ink-dim); }
+
+  /* Feature list */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 40px;
+    margin-top: 36px;
+  }
+  .feature { min-width: 0; }
+  .feature h3 { margin: 0 0 6px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .feature p { margin: 0; color: var(--ink-dim); font-size: 15px; }
+  .feature .tag {
+    display: inline-block;
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent-dim); padding: 3px 7px; border-radius: 3px;
+    margin-bottom: 10px;
+  }
+
+  /* Pricing */
+  .price-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 36px;
+  }
+  .plan {
+    border: 1px solid var(--line);
+    padding: 24px;
+    min-width: 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .plan.pro { border-left: 3px solid var(--accent); }
+  .plan .amount {
+    font-weight: 900; font-size: 40px; letter-spacing: -0.04em; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .plan .amount small { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--ink-dim); letter-spacing: 0.1em; margin-left: 8px; }
+  .plan ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--ink-dim); font-size: 15px; }
+  .plan ul li::before { content: "— "; color: var(--accent-dim); }
+  .fine { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); margin-top: 18px; line-height: 1.7; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--line); }
+  footer .wrap {
+    padding-block: 28px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint);
+  }
+
+  @media (max-width: 760px) {
+    .hero .wrap { grid-template-columns: 1fr; gap: 36px; padding-block: 44px 48px; }
+    .steps, .features, .price-grid { grid-template-columns: 1fr; }
+    section.band .wrap { padding-block: 48px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chip, .bar i { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><i></i>TurboLists</div>
+    <a class="btn" href="#pricing">Pricing</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <div class="mono"><span class="accent">Packing lists</span> for people who go out every weekend</div>
+      <h1>Stop forgetting the <em>stove fuel.</em></h1>
+      <p class="lede">
+        Build your gear once as small reusable kits. Pick the kits a trip needs and TurboLists merges them into a single checklist, with every shared item listed only once.
+      </p>
+      <div class="cta-row">
+        <a class="btn primary" href="#how">See how it works</a>
+        <span class="cta-note">Coming to iPhone. Your data stays on your phone.</span>
+      </div>
+    </div>
+
+    <div class="demo" aria-label="Live demo of merging kits">
+      <div class="demo-head">
+        <div>
+          <div class="mono">Trip · Sat–Sun</div>
+          <div class="demo-title">Arapiles weekend</div>
+        </div>
+        <div class="mono">Tap kits to add</div>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Kits"></div>
+      <div class="progress">
+        <span><strong id="count">0 / 0</strong> packed</span>
+        <span class="dedupe" id="dedupe"></span>
+      </div>
+      <div class="bar"><i id="bar" style="width:0%"></i></div>
+      <ul class="list" id="list"></ul>
+    </div>
+  </div>
+</header>
+
+<section class="band" id="how">
+  <div class="wrap">
+    <div class="mono">How it works</div>
+    <h2>Three screens. One library.</h2>
+    <p class="sub">Every trip is built from the same pool of gear, so fixing a kit once fixes every trip that uses it.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="mono">Items</div>
+        <h3>Add your gear once</h3>
+        <p>Everything you own that ever leaves the house, with a note if it needs one.</p>
+        <div class="ex"><span>Headlamp</span> · spare batteries in lid<br><span>Belay device</span><br><span>Jetboil</span> · check fuel</div>
+      </div>
+      <div class="step">
+        <div class="mono">Facets</div>
+        <h3>Group items into kits</h3>
+        <p>A kit is a short ordered list for one kind of outing. Items can live in as many kits as you like.</p>
+        <div class="ex"><span>Base camp</span> · 9 items<br><span>Camp kitchen</span> · 7 items<br><span>Sport climbing</span> · 8 items</div>
+      </div>
+      <div class="step">
+        <div class="mono">Trips</div>
+        <h3>Pick kits, pack the list</h3>
+        <p>Choose the kits this trip needs. Duplicates merge, the order holds, and you tick things off as they go in the car.</p>
+        <div class="ex"><span>Base camp + Kitchen + Sport</span><br>24 items · <span>3 merged</span><br>18 / 24 packed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="mono">What's in the app today</div>
+    <h2>Small on purpose.</h2>
+    <p class="sub">No accounts, no cloud, no feed. It does one job and gets out of the way at the trailhead.</p>
+
+    <div class="features">
+      <div class="feature">
+        <span class="tag">Merge</span>
+        <h3>Shared items appear once</h3>
+        <p>Headlamp, knife and first aid kit are in half your kits. On a trip they show up a single time, in the position of the first kit that uses them.</p>
+      </div>
+      <div class="feature">
+        <span class="tag">Order</span>
+        <h3>Kits keep their order</h3>
+        <p>Put items in the order you pack them. The merged trip list follows that order kit by kit, so the car loads the same way every time.</p>
+      </div>
+      <div class="feature">
+        <span class="tag">Pack</span>
+        <h3>Check off with a click</h3>
+        <p>A progress count at the top, a haptic tap on each check, and a reset so the same trip is ready to pack again next weekend.</p>
+      </div>
+      <div class="feature">
+        <span class="tag">Reuse</span>
+        <h3>See where a kit is used</h3>
+        <p>Each kit shows how many trips use it and each item shows which kits it belongs to, so a change never lands somewhere you didn't expect.</p>
+      </div>
+      <div class="feature">
+        <span class="tag">Local</span>
+        <h3>Your data stays on your phone</h3>
+        <p>Everything is a plain JSON file on the device. No sign-up, nothing sent anywhere, and it works with no signal at the campsite.</p>
+      </div>
+      <div class="feature">
+        <span class="tag">Fast</span>
+        <h3>Opens straight to the trip</h3>
+        <p>Native app built for phones. No spinner, no sync wait, no "what's new" screen between you and the list.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="pricing">
+  <div class="wrap">
+    <div class="mono">Pricing</div>
+    <h2>Pay once, if you want more kits.</h2>
+    <p class="sub">Three kits is enough to see whether it fits how you pack. If it does, one purchase unlocks the rest for good.</p>
+
+    <div class="price-grid">
+      <div class="plan">
+        <div class="mono">Free</div>
+        <div class="amount">$0</div>
+        <ul>
+          <li>Unlimited items</li>
+          <li>Unlimited trips</li>
+          <li>Up to 3 kits</li>
+          <li>Everything else in the app</li>
+        </ul>
+      </div>
+      <div class="plan pro">
+        <div class="mono"><span class="accent">Unlock</span></div>
+        <div class="amount">$4.99<small>once</small></div>
+        <ul>
+          <li>Unlimited kits</li>
+          <li>Family Sharing</li>
+          <li>No subscription, ever</li>
+          <li>Restores on a new phone</li>
+        </ul>
+      </div>
+    </div>
+    <p class="fine">Made by one person who kept leaving the gas canister at home. Planned pricing; final price set at App Store launch.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>TurboLists</span>
+    <span>Local-first · iPhone first · Android later</span>
+  </div>
+</footer>
+
+<script>
+  // Mirrors core/views.ts tripChecklist: walk kits in trip order, keep first occurrence of each item.
+  const KITS = [
+    { id: "base", name: "Base camp", items: ["Tent", "Sleeping bag", "Sleeping mat", "Headlamp", "First aid kit", "Knife", "Water bottle"] },
+    { id: "kitchen", name: "Camp kitchen", items: ["Jetboil", "Gas canister", "Lighter", "Spork", "Mug", "Knife", "Water bottle", "Dish soap"] },
+    { id: "sport", name: "Sport climbing", items: ["Harness", "Rope 70m", "Quickdraws ×12", "Belay device", "Climbing shoes", "Chalk bag", "Helmet", "Headlamp"] },
+    { id: "trad", name: "Trad rack", items: ["Harness", "Rope 60m", "Cams", "Nuts", "Slings", "Belay device", "Helmet", "Nut tool"] },
+    { id: "overnight", name: "Overnight walk", items: ["Pack 50L", "Water filter", "Map", "Headlamp", "First aid kit", "Sleeping bag", "Sleeping mat", "Rain jacket"] },
+    { id: "car", name: "Car camping", items: ["Camp chairs", "Esky", "Table", "Lantern", "Pillow", "Water bottle", "Firewood"] },
+  ];
+  const selected = ["base", "kitchen", "sport"];
+  const checked = new Set(["Tent", "Harness", "Headlamp"]);
+
+  const chipsEl = document.getElementById("chips");
+  const listEl = document.getElementById("list");
+  const countEl = document.getElementById("count");
+  const barEl = document.getElementById("bar");
+  const dedupeEl = document.getElementById("dedupe");
+
+  function checklist() {
+    const seen = new Map();
+    let dup = 0;
+    for (const id of selected) {
+      const kit = KITS.find(k => k.id === id);
+      for (const item of kit.items) {
+        if (seen.has(item)) { seen.get(item).merged = true; dup++; }
+        else seen.set(item, { name: item, from: kit.name, merged: false });
+      }
+    }
+    return { rows: [...seen.values()], dup };
+  }
+
+  function render() {
+    chipsEl.replaceChildren(...KITS.map(k => {
+      const b = document.createElement("button");
+      b.className = "chip";
+      b.type = "button";
+      b.textContent = k.name;
+      b.setAttribute("aria-pressed", String(selected.includes(k.id)));
+      b.onclick = () => {
+        const i = selected.indexOf(k.id);
+        i >= 0 ? selected.splice(i, 1) : selected.push(k.id);
+        render();
+      };
+      return b;
+    }));
+
+    const { rows, dup } = checklist();
+    const done = rows.filter(r => checked.has(r.name)).length;
+    countEl.textContent = `${done} / ${rows.length}`;
+    barEl.style.width = rows.length ? `${(done / rows.length) * 100}%` : "0%";
+    dedupeEl.innerHTML = rows.length
+      ? `${selected.length} kits · <b>${dup}</b> duplicate${dup === 1 ? "" : "s"} merged`
+      : "";
+
+    if (!rows.length) {
+      listEl.innerHTML = '<li class="empty">Pick a kit above to build the list</li>';
+      return;
+    }
+    listEl.replaceChildren(...rows.map(r => {
+      const li = document.createElement("li");
+      li.className = checked.has(r.name) ? "done" : "";
+      li.innerHTML = `<span class="box"></span><span class="name"></span><span class="from${r.merged ? " merged" : ""}"></span>`;
+      li.querySelector(".name").textContent = r.name;
+      li.querySelector(".from").textContent = r.merged ? "merged" : r.from;
+      li.onclick = () => { checked.has(r.name) ? checked.delete(r.name) : checked.add(r.name); render(); };
+      return li;
+    }));
+  }
+  render();
+</script>
+</body>
+</html>
