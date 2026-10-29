@@ -7,6 +7,7 @@ import type { AppState } from "../store/state.ts";
 import { newTripId } from "../ids.ts";
 import type { Trip } from "@turbolists/core/trip";
 import { packProgress } from "@turbolists/core/views";
+import { facetId, type FacetId, type ItemId } from "@turbolists/core/ids";
 import { AnimatedNumber } from "../animated-number.ts";
 
 @customElement("trips-view")
@@ -531,7 +532,7 @@ export class TripsView extends LitElement {
       <div class="screen-body" style="padding-top: 0;">
         ${(() => {
           // Count how many selected facets each item appears in
-          const itemFacetCount = new Map<string, number>();
+          const itemFacetCount = new Map<ItemId, number>();
           for (const fid of trip.facetIds) {
             const f = facetMap.get(fid);
             if (!f) continue;
@@ -540,19 +541,19 @@ export class TripsView extends LitElement {
             }
           }
 
-          const sharedIds = new Set<string>();
+          const sharedIds = new Set<ItemId>();
           for (const [id, count] of itemFacetCount) {
             if (count > 1) sharedIds.add(id);
           }
 
-          const sortByChecked = (ids: readonly string[]) =>
+          const sortByChecked = (ids: readonly ItemId[]) =>
             [...ids].sort((a, b) => {
               const ac = trip.checked.has(a) ? 1 : 0;
               const bc = trip.checked.has(b) ? 1 : 0;
               return ac - bc;
             });
 
-          const renderSection = (name: string, itemIds: string[]) => {
+          const renderSection = (name: string, itemIds: ItemId[]) => {
             if (itemIds.length === 0) return nothing;
             const checkedCount = itemIds.filter((id) => trip.checked.has(id)).length;
             return html`
@@ -588,7 +589,7 @@ export class TripsView extends LitElement {
           });
 
           // Group shared items by their exact facet combination
-          const itemToFacets = new Map<string, string[]>();
+          const itemToFacets = new Map<ItemId, FacetId[]>();
           for (const fid of trip.facetIds) {
             const f = facetMap.get(fid);
             if (!f) continue;
@@ -602,7 +603,7 @@ export class TripsView extends LitElement {
           }
 
           // Group by facet combo key
-          const comboGroups = new Map<string, string[]>();
+          const comboGroups = new Map<string, ItemId[]>();
           for (const [itemId, fids] of itemToFacets) {
             const key = fids.join("+");
             const group = comboGroups.get(key) ?? [];
@@ -611,7 +612,7 @@ export class TripsView extends LitElement {
           }
 
           const sharedSections = [...comboGroups.entries()].map(([key, itemIds]) => {
-            const facetNames = key.split("+").map((fid) => facetMap.get(fid)?.name ?? fid);
+            const facetNames = key.split("+").map((fid) => facetMap.get(facetId(fid))?.name ?? fid);
             return renderSection(facetNames.join(" + "), sortByChecked(itemIds));
           });
 

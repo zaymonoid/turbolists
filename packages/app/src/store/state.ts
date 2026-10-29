@@ -1,6 +1,5 @@
 import type { Store } from "@turbolists/core/store";
 import type { ItemId, FacetId, TripId } from "@turbolists/core/ids";
-import type { Action } from "@zaymonoid/katha";
 
 export interface AppState {
   readonly data: Store;

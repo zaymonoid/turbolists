@@ -13,6 +13,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "paths": {
+      "@turbolists/core/*": ["../core/src/*.ts"]
+    },
 
     /* Linting */
     "strict": true,

@@ -9,7 +9,9 @@ import { debounce, takeEvery } from "./combinators.ts";
 const autoSave = debounce("500 millis", [...dataActionIds], (_action, ctx) =>
   Effect.gen(function* () {
     const state = yield* ctx.select();
-    yield* Effect.tryPromise(() => writeStore(storeToJson(state.data)));
+    yield* Effect.tryPromise(() => writeStore(storeToJson(state.data))).pipe(
+      Effect.catchAll((e) => Effect.logError("auto-save failed", e)),
+    );
   }),
 );
 

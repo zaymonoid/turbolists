@@ -12,7 +12,7 @@ const initialState: AppState = {
 };
 
 class AppStore extends Effect.Service<AppStore>()("AppStore", {
-  scoped: makeStore<AppState, AppAction>({
+  scoped: makeStore<AppState, AppAction, never>({
     initialState,
     reduce: appReducer,
     process: rootProcess,
