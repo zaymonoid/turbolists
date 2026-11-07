@@ -19,20 +19,9 @@ export class ItemsView extends LitElement {
 
     /* ---- Screen header ---- */
     .screen-header {
-      padding: 8px 20px 16px;
+      padding: 20px 20px 16px;
       border-bottom: 1px solid var(--line, #2a2e26);
     }
-    .screen-eyebrow {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 9px;
-      color: var(--ink-dim, #8a8c82);
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .screen-eyebrow .accent { color: var(--accent, #d4ff3a); }
     .screen-title {
       font-family: var(--font-display, 'Archivo', sans-serif);
       font-weight: 900;
@@ -166,10 +155,6 @@ export class ItemsView extends LitElement {
 
     return html`
       <div class="screen-header">
-        <div class="screen-eyebrow">
-          <span>SECTION 03</span>
-          <span class="accent">${items.length} ITEM${items.length !== 1 ? "S" : ""}</span>
-        </div>
         <div class="screen-title">Items</div>
         <div class="screen-sub">The atomic units</div>
       </div>
