@@ -13,8 +13,14 @@ export class AppShell extends LitElement {
     :host {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100dvh;
       background: var(--bg, #0e0f0c);
+    }
+
+    /* Keeps content clear of the status bar / notch on iOS */
+    .safe-top {
+      height: env(safe-area-inset-top);
+      flex-shrink: 0;
     }
 
     .screen-content {
@@ -26,7 +32,8 @@ export class AppShell extends LitElement {
 
     /* ---- Tab bar ---- */
     .tab-bar {
-      height: 64px;
+      height: calc(64px + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
       border-top: 1px solid var(--line, #2a2e26);
       background: var(--panel, #161814);
       display: flex;
@@ -114,6 +121,7 @@ export class AppShell extends LitElement {
   render() {
     const v = this.view.value;
     return html`
+      <div class="safe-top"></div>
       <div class="screen-content">
         ${v === "trips" ? html`<trips-view></trips-view>` : nothing}
         ${v === "facets" ? html`<facets-view></facets-view>` : nothing}
