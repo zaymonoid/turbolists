@@ -180,7 +180,9 @@ try {
   await tap("New trip");
   await type("e.g. Weekend on the coast", trip);
   await tap("Create");
+  // New trips open the kit setup sheet before the checklist.
   await tap(`＋ ${kit}`);
+  await tap("Done");
   await type("Search checklist", `missing-${suffix}`);
   await dismissKeyboard();
   await expectText("No matching items");

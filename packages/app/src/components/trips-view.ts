@@ -117,20 +117,108 @@ export class TripsView extends LitElement {
         color: var(--ink-dim);
         margin-top: 6px;
       }
-      details {
-        padding: 16px;
+      .kit-summary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        min-height: 44px;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: var(--ink-dim);
+        font-size: 15px;
+        text-align: left;
       }
-      summary {
-        cursor: pointer;
-        min-height: 28px;
-        font-size: 17px;
+      .kit-summary span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .kit-summary.empty-kits {
+        color: var(--accent);
         font-weight: 600;
+      }
+      .kit-summary svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
       }
       .kit-options {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
         margin-top: 16px;
+      }
+      dialog.sheet {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        color: var(--ink);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 26px 26px 0 0;
+        padding: 10px 22px calc(28px + env(safe-area-inset-bottom));
+        width: 100%;
+        max-width: 540px;
+        max-height: 90dvh;
+        margin: auto auto 0;
+        box-shadow: 0 -20px 80px #0006;
+        overflow-y: auto;
+      }
+      dialog.sheet::backdrop {
+        background: #0009;
+        backdrop-filter: blur(5px);
+      }
+      .sheet-handle {
+        width: 34px;
+        height: 5px;
+        border-radius: 5px;
+        margin: 0 auto 8px;
+        background: #626b5b;
+      }
+      .sheet-nav {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0 -8px;
+      }
+      .sheet-nav button {
+        color: var(--accent);
+        background: none;
+        border: 0;
+        min-height: 44px;
+        padding: 8px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      dialog.sheet h2 {
+        margin: 8px 0 6px;
+        font-size: 27px;
+        letter-spacing: -0.03em;
+        overflow-wrap: anywhere;
+      }
+      dialog.sheet label {
+        display: block;
+        color: var(--ink-dim);
+        font-size: 14px;
+        margin: 20px 0 8px;
+      }
+      dialog.sheet input {
+        width: 100%;
+        min-height: 52px;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        padding: 12px 14px;
+        font-size: 17px;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      @media (min-width: 650px) {
+        dialog.sheet {
+          top: 0;
+          margin: auto;
+          border-radius: 26px;
+        }
       }
       .kit-toggle {
         min-height: 44px;
@@ -245,12 +333,26 @@ export class TripsView extends LitElement {
   private shareMessage = "";
   @state()
   private packingOrder: ReadonlySet<ItemId> | null = null;
+  /** Kit sheet: "setup" right after creating a trip, "settings" from the pencil. */
+  @state()
+  private sheet: "setup" | "settings" | null = null;
   private reorderTimer: ReturnType<typeof setTimeout> | undefined;
 
   private clearReorder() {
     clearTimeout(this.reorderTimer);
     this.reorderTimer = undefined;
     this.packingOrder = null;
+  }
+
+  override updated() {
+    const dialog = this.renderRoot.querySelector<HTMLDialogElement>(
+      "dialog.sheet",
+    );
+    if (dialog && !dialog.open) dialog.showModal();
+  }
+
+  private closeSheet() {
+    this.sheet = null;
   }
 
   override disconnectedCallback() {
@@ -304,12 +406,14 @@ export class TripsView extends LitElement {
     this.tripQuery = "";
     this.archivedView = false;
     this.open(id);
+    this.sheet = "setup";
   }
   private open(id: Trip["id"]) {
     this.clearReorder();
     this.shareMessage = "";
     this.remainingOnly = false;
     this.checklistQuery = "";
+    this.sheet = null;
     store.put({ id: "nav/select-trip", data: { tripId: id } });
   }
   private async packAgain(trip: Trip) {
@@ -642,13 +746,16 @@ export class TripsView extends LitElement {
             ${icon("back")} Trips</button
           ><button
             class="icon-button"
-            aria-label="Rename trip"
-            @click=${() => this.rename(trip)}
+            aria-label="Trip settings"
+            @click=${() => {
+              this.sheet = "settings";
+            }}
           >
             ${icon("edit")}
           </button>
         </div>
         <h1>${trip.name}</h1>
+        ${this.renderKitSummary(trip)}
       </header>
       <div class="body">
         ${trip.archived
@@ -700,43 +807,6 @@ export class TripsView extends LitElement {
             ? html`<p class="meta" role="status">${this.shareMessage}</p>`
             : null}
         </section>
-        <details class="card" open>
-          <summary
-            aria-label=${`Choose kits, ${trip.kitIds.length} selected`}
-          >
-            Kits <span class="meta">· ${trip.kitIds.length} selected</span>
-          </summary>
-          <p class="meta">
-            Choose what fits this trip. Shared items appear just once.
-          </p>
-          ${kits.length
-            ? html`<div class="kit-options">
-                ${
-              kits.map((kit) => {
-                const active = trip.kitIds.includes(kit.id);
-                return html`
-                  <button
-                    class="kit-toggle ${active ? "active" : ""}"
-                    aria-pressed=${active}
-                    @click=${() =>
-                      store.put({
-                        id: active ? "trip/remove-kit" : "trip/add-kit",
-                        data: { tripId: trip.id, kitId: kit.id },
-                      })}
-                  >
-                    ${active ? "✓ " : "＋ "}${kit.name}
-                  </button>
-                `;
-              })
-            }
-              </div>`
-            : html`
-              <p class="meta">Create a kit first, then add it here.</p>
-              <button class="text-button" @click=${() => navigate("kits")}>
-                                Create a kit →
-                              </button>
-            `}
-        </details>
         ${total
           ? html`<div class="check-toolbar">
                 <h2>Checklist</h2>
@@ -849,17 +919,126 @@ export class TripsView extends LitElement {
               <p>
                 ${trip.kitIds.length
                   ? "Add items to your kits to start packing."
-                  : "Select your kits above to build a packing list for this trip."}
+                  : "Choose kits to build a packing list for this trip."}
               </p>
-              <button class="text-button" @click=${() => navigate("kits")}>
-                ${trip.kitIds.length
-                  ? "Add items to kits"
-                  : "Manage kits"}
-                →
-              </button>
+              ${trip.kitIds.length
+                ? html`<button class="text-button" @click=${() =>
+                  navigate("kits")}>Add items to kits →</button>`
+                : html`<button class="primary" @click=${() => {
+                  this.sheet = "settings";
+                }}>Choose kits</button>`}
             </div>
           `}
       </div>
+      ${this.sheet ? this.renderSheet(trip) : null}
+    `;
+  }
+  private renderKitSummary(trip: Trip) {
+    const names = trip.kitIds
+      .map((id) => this.kits.value.find((kit) => kit.id === id)?.name)
+      .filter(Boolean);
+    const open = () => {
+      this.sheet = "settings";
+    };
+    return names.length
+      ? html`
+        <button
+          class="kit-summary"
+          aria-label=${`Kits: ${names.join(", ")}. Edit kits`}
+          @click=${open}
+        ><span>${names.join(" · ")}</span>${icon("chevron")}</button>
+      `
+      : html`<button class="kit-summary empty-kits" @click=${open}>
+          ${icon("plus")}<span>Choose kits</span>
+        </button>`;
+  }
+  private renderSheet(trip: Trip) {
+    const kits = this.kits.value;
+    const setup = this.sheet === "setup";
+    return html`
+      <dialog
+        class="sheet"
+        aria-labelledby="sheet-title"
+        @close=${this.closeSheet}
+        @click=${(e: MouseEvent) => {
+          // Taps on the backdrop land on the dialog element itself.
+          const dialog = e.currentTarget as HTMLDialogElement;
+          const r = dialog.getBoundingClientRect();
+          if (
+            e.target === dialog &&
+            (e.clientY < r.top || e.clientY > r.bottom ||
+              e.clientX < r.left || e.clientX > r.right)
+          ) dialog.close();
+        }}
+      >
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-nav">
+          <button
+            @click=${(e: Event) =>
+              (e.currentTarget as HTMLElement).closest("dialog")!.close()}
+          >
+            Done
+          </button>
+        </div>
+        <h2 id="sheet-title">${setup
+          ? "What kind of trip?"
+          : "Trip settings"}</h2>
+        ${setup ? null : html`<label for="trip-name">Name</label><input
+              id="trip-name"
+              aria-label="Trip name"
+              .value=${trip.name}
+              autocomplete="off"
+              enterkeyhint="done"
+              maxlength="120"
+              @change=${(e: Event) => {
+          const input = e.target as HTMLInputElement;
+          const name = input.value.trim();
+          if (name && name !== trip.name) {
+            store.put({ id: "trip/rename", data: { id: trip.id, name } });
+          } else input.value = trip.name;
+        }}
+              @keydown=${(e: KeyboardEvent) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+            />`}
+        <label>Kits</label>
+        <p class="meta">
+          Choose what fits this trip. Shared items appear just once.
+        </p>
+        ${kits.length
+          ? html`<div class="kit-options">
+              ${
+            kits.map((kit) => {
+              const active = trip.kitIds.includes(kit.id);
+              return html`
+                <button
+                  class="kit-toggle ${active ? "active" : ""}"
+                  aria-pressed=${active}
+                  @click=${() =>
+                    store.put({
+                      id: active ? "trip/remove-kit" : "trip/add-kit",
+                      data: { tripId: trip.id, kitId: kit.id },
+                    })}
+                >
+                  ${active ? "✓ " : "＋ "}${kit.name}
+                </button>
+              `;
+            })
+          }
+            </div>`
+          : html`
+            <p class="meta">Create a kit first, then add it here.</p>
+            <button
+              class="text-button"
+              @click=${() => {
+                this.sheet = null;
+                navigate("kits");
+              }}
+            >
+              Create a kit →
+            </button>
+          `}
+      </dialog>
     `;
   }
   render() {
