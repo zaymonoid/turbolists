@@ -126,13 +126,13 @@ export class TripsView extends LitElement {
         font-size: 17px;
         font-weight: 600;
       }
-      .facet-options {
+      .kit-options {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
         margin-top: 16px;
       }
-      .facet-toggle {
+      .kit-toggle {
         min-height: 44px;
         padding: 10px 13px;
         background: var(--panel-2);
@@ -142,7 +142,7 @@ export class TripsView extends LitElement {
         font-size: 15px;
         overflow-wrap: anywhere;
       }
-      .facet-toggle.active {
+      .kit-toggle.active {
         background: #d4ff3a16;
         color: var(--accent);
         border-color: var(--accent-dim);
@@ -228,7 +228,7 @@ export class TripsView extends LitElement {
   private animatedTotal = new AnimatedNumber(this);
   private counterTripId: Trip["id"] | null = null;
   private trips = fromStore(this, store, (s: AppState) => s.data.trips);
-  private facets = fromStore(this, store, (s: AppState) => s.data.facets);
+  private kits = fromStore(this, store, (s: AppState) => s.data.kits);
   private items = fromStore(this, store, (s: AppState) => s.data.items);
   private selected = fromStore(this, store, (s: AppState) => s.selectedTripId);
   @state()
@@ -274,7 +274,7 @@ export class TripsView extends LitElement {
     try {
       const result = await shareChecklist(
         trip.name,
-        formatTripChecklist(trip, this.facets.value, this.items.value),
+        formatTripChecklist(trip, this.kits.value, this.items.value),
       );
       if (result === "copied") {
         this.shareMessage =
@@ -316,7 +316,7 @@ export class TripsView extends LitElement {
     const name = await showDialog({
       title: "Pack again",
       message:
-        "Reuse these facets with a fresh checklist. The original trip keeps its packing progress.",
+        "Reuse these kits with a fresh checklist. The original trip keeps its packing progress.",
       value: `${trip.name} again`.slice(0, 120),
       confirm: "Create trip",
     });
@@ -352,7 +352,7 @@ export class TripsView extends LitElement {
       await showDialog({
         title: `Delete “${trip.name}”?`,
         message:
-          "This packing list and its progress will be removed. Your facets and items stay in your library.",
+          "This packing list and its progress will be removed. Your kits and items stay in your library.",
         confirm: "Delete",
         destructive: true,
       })
@@ -374,7 +374,7 @@ export class TripsView extends LitElement {
   }
   private renderList() {
     const trips = this.trips.value;
-    const facets = this.facets.value;
+    const kits = this.kits.value;
     const query = this.tripQuery.trim().toLocaleLowerCase();
     const matching = [...trips]
       .reverse()
@@ -477,7 +477,7 @@ export class TripsView extends LitElement {
               <div class="empty-icon">${icon("trips")}</div>
               <h2>Your next trip starts here</h2>
               <p>
-                Create a trip, choose the facets that fit, and get one
+                Create a trip, choose the kits that fit, and get one
                 checklist with everything you need.
               </p>
               <button class="primary" @click=${this.add}>
@@ -486,7 +486,7 @@ export class TripsView extends LitElement {
             </div>
           `
           : repeat(matching, (trip) => trip.id, (trip) => {
-            const { checked, total } = packProgress(trip, facets);
+            const { checked, total } = packProgress(trip, kits);
             const complete = total > 0 && checked === total;
             const date = new Date(trip.createdAt);
             return html`
@@ -519,14 +519,14 @@ export class TripsView extends LitElement {
                   <span class="card-title"
                     >${trip.name}${icon("chevron")}</span
                   >
-                  ${trip.facetIds.length
+                  ${trip.kitIds.length
                     ? html`<div class="chips">
                           ${
-                      trip.facetIds.map(
+                      trip.kitIds.map(
                         (id) =>
                           html`
                             <span class="chip"
-                            >${facets.find((f) => f.id === id)?.name}</span>
+                            >${kits.find((f) => f.id === id)?.name}</span>
                           `,
                       )
                     }
@@ -546,11 +546,11 @@ export class TripsView extends LitElement {
                       </div>
                     `
                     : html`<div class="meta">
-                          Choose facets to build your checklist
+                          Choose kits to build your checklist
                         </div>`}
                 </button>
                 <div class="toolbar">
-                  ${trip.facetIds.length
+                  ${trip.kitIds.length
                     ? html`
                       <button
                         class="text-button"
@@ -591,9 +591,9 @@ export class TripsView extends LitElement {
     `;
   }
   private renderDetail(trip: Trip) {
-    const facets = this.facets.value;
+    const kits = this.kits.value;
     const orderChecked = this.packingOrder ?? trip.checked;
-    const { checked, total } = packProgress(trip, facets);
+    const { checked, total } = packProgress(trip, kits);
     if (this.counterTripId !== trip.id) {
       this.animatedChecked.reset(checked);
       this.animatedTotal.reset(total);
@@ -607,14 +607,14 @@ export class TripsView extends LitElement {
     const query = this.checklistQuery.trim().toLocaleLowerCase();
     const matchesSearch = (id: ItemId) =>
       (itemMap.get(id)?.name ?? "").toLocaleLowerCase().includes(query);
-    const visibleCount = tripChecklist(trip, facets).filter(
+    const visibleCount = tripChecklist(trip, kits).filter(
       (id) =>
         matchesSearch(id) && (!this.remainingOnly || !orderChecked.has(id)),
     ).length;
-    // Build groups in facet order; each group displays unpacked items first.
-    for (const id of tripChecklist(trip, facets)) {
-      const owners = facets.filter(
-        (f) => trip.facetIds.includes(f.id) && f.itemIds.includes(id),
+    // Build groups in kit order; each group displays unpacked items first.
+    for (const id of tripChecklist(trip, kits)) {
+      const owners = kits.filter(
+        (f) => trip.kitIds.includes(f.id) && f.itemIds.includes(id),
       );
       const key = owners
         .map((f) => f.id)
@@ -702,38 +702,38 @@ export class TripsView extends LitElement {
         </section>
         <details class="card" open>
           <summary
-            aria-label=${`Choose facets, ${trip.facetIds.length} selected`}
+            aria-label=${`Choose kits, ${trip.kitIds.length} selected`}
           >
-            Facets <span class="meta">· ${trip.facetIds.length} selected</span>
+            Kits <span class="meta">· ${trip.kitIds.length} selected</span>
           </summary>
           <p class="meta">
             Choose what fits this trip. Shared items appear just once.
           </p>
-          ${facets.length
-            ? html`<div class="facet-options">
+          ${kits.length
+            ? html`<div class="kit-options">
                 ${
-              facets.map((facet) => {
-                const active = trip.facetIds.includes(facet.id);
+              kits.map((kit) => {
+                const active = trip.kitIds.includes(kit.id);
                 return html`
                   <button
-                    class="facet-toggle ${active ? "active" : ""}"
+                    class="kit-toggle ${active ? "active" : ""}"
                     aria-pressed=${active}
                     @click=${() =>
                       store.put({
-                        id: active ? "trip/remove-facet" : "trip/add-facet",
-                        data: { tripId: trip.id, facetId: facet.id },
+                        id: active ? "trip/remove-kit" : "trip/add-kit",
+                        data: { tripId: trip.id, kitId: kit.id },
                       })}
                   >
-                    ${active ? "✓ " : "＋ "}${facet.name}
+                    ${active ? "✓ " : "＋ "}${kit.name}
                   </button>
                 `;
               })
             }
               </div>`
             : html`
-              <p class="meta">Create a facet first, then add it here.</p>
-              <button class="text-button" @click=${() => navigate("facets")}>
-                                Create a facet →
+              <p class="meta">Create a kit first, then add it here.</p>
+              <button class="text-button" @click=${() => navigate("kits")}>
+                                Create a kit →
                               </button>
             `}
         </details>
@@ -842,19 +842,19 @@ export class TripsView extends LitElement {
             <div class="empty compact">
               <div class="empty-icon">${icon("items")}</div>
               <h2>
-                ${trip.facetIds.length
-                  ? "These facets are empty"
+                ${trip.kitIds.length
+                  ? "These kits are empty"
                   : "What’s coming with you?"}
               </h2>
               <p>
-                ${trip.facetIds.length
-                  ? "Add items to your facets to start packing."
-                  : "Select your facets above to build a packing list for this trip."}
+                ${trip.kitIds.length
+                  ? "Add items to your kits to start packing."
+                  : "Select your kits above to build a packing list for this trip."}
               </p>
-              <button class="text-button" @click=${() => navigate("facets")}>
-                ${trip.facetIds.length
-                  ? "Add items to facets"
-                  : "Manage facets"}
+              <button class="text-button" @click=${() => navigate("kits")}>
+                ${trip.kitIds.length
+                  ? "Add items to kits"
+                  : "Manage kits"}
                 →
               </button>
             </div>

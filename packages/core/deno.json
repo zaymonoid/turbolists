@@ -4,7 +4,7 @@
   "exports": {
     "./ids": "./src/ids.ts",
     "./item": "./src/item.ts",
-    "./facet": "./src/facet.ts",
+    "./kit": "./src/kit.ts",
     "./trip": "./src/trip.ts",
     "./store": "./src/store.ts",
     "./views": "./src/views.ts",

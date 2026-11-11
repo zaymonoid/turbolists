@@ -1,12 +1,12 @@
 import { invariant } from "./util/invariant.ts";
 import { dedupe } from "./util/dedupe.ts";
-import type { FacetId, ItemId, TripId } from "./ids.ts";
+import type { KitId, ItemId, TripId } from "./ids.ts";
 
 export interface Trip {
   readonly id: TripId;
   readonly name: string;
   readonly createdAt: string;
-  readonly facetIds: readonly FacetId[];
+  readonly kitIds: readonly KitId[];
   readonly archived?: boolean;
   readonly checked: ReadonlySet<ItemId>;
 }
@@ -26,12 +26,12 @@ export function createTrip(
     id,
     name,
     createdAt,
-    facetIds: [],
+    kitIds: [],
     checked: new Set(),
   }];
 }
 
-/** Reuse a trip's facets without carrying over its packing progress. */
+/** Reuse a trip's kits without carrying over its packing progress. */
 export function duplicateTrip(
   trips: readonly Trip[],
   sourceId: TripId,
@@ -43,7 +43,7 @@ export function duplicateTrip(
   invariant(source, `Trip with id "${sourceId}" not found`);
   const result = createTrip(trips, id, name, createdAt);
   return result.map((trip) =>
-    trip.id === id ? { ...trip, facetIds: [...source.facetIds] } : trip
+    trip.id === id ? { ...trip, kitIds: [...source.kitIds] } : trip
   );
 }
 
@@ -60,10 +60,10 @@ export function renameTrip(
   return trips.map((t) => (t.id === id ? { ...t, name } : t));
 }
 
-export function addFacetToTrip(
+export function addKitToTrip(
   trips: readonly Trip[],
   tripId: TripId,
-  facetId: FacetId,
+  kitId: KitId,
 ): readonly Trip[] {
   invariant(
     trips.some((t) => t.id === tripId),
@@ -71,14 +71,14 @@ export function addFacetToTrip(
   );
   return trips.map((t) => {
     if (t.id !== tripId) return t;
-    return { ...t, facetIds: dedupe([...t.facetIds, facetId]) };
+    return { ...t, kitIds: dedupe([...t.kitIds, kitId]) };
   });
 }
 
-export function removeFacetFromTrip(
+export function removeKitFromTrip(
   trips: readonly Trip[],
   tripId: TripId,
-  facetId: FacetId,
+  kitId: KitId,
 ): readonly Trip[] {
   invariant(
     trips.some((t) => t.id === tripId),
@@ -86,7 +86,7 @@ export function removeFacetFromTrip(
   );
   return trips.map((t) => {
     if (t.id !== tripId) return t;
-    return { ...t, facetIds: t.facetIds.filter((id) => id !== facetId) };
+    return { ...t, kitIds: t.kitIds.filter((id) => id !== kitId) };
   });
 }
 
@@ -133,7 +133,7 @@ export function deleteTrip(
   return trips.filter((t) => t.id !== id);
 }
 
-/** Archiving changes organization only; packing progress and facets stay intact. */
+/** Archiving changes organization only; packing progress and kits stay intact. */
 export function setTripArchived(
   trips: readonly Trip[],
   id: TripId,

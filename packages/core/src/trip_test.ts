@@ -1,24 +1,24 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import * as fc from "fast-check";
 import {
-  addFacetToTrip,
+  addKitToTrip,
   createTrip,
   deleteTrip,
   duplicateTrip,
-  removeFacetFromTrip,
+  removeKitFromTrip,
   renameTrip,
   resetChecks,
   setTripArchived,
   toggleChecked,
   type Trip,
 } from "./trip.ts";
-import { facetId, itemId, tripId } from "./ids.ts";
-import type { FacetId, ItemId, TripId } from "./ids.ts";
+import { kitId, itemId, tripId } from "./ids.ts";
+import type { KitId, ItemId, TripId } from "./ids.ts";
 
 const t1 = tripId("t1");
 const t2 = tripId("t2");
-const f1 = facetId("f1");
-const f2 = facetId("f2");
+const f1 = kitId("f1");
+const f2 = kitId("f2");
 const i1 = itemId("i1");
 const i2 = itemId("i2");
 
@@ -32,7 +32,7 @@ Deno.test("createTrip - creates trip", () => {
   assertEquals(trips[0].id, t1);
   assertEquals(trips[0].name, "Squamish Weekend");
   assertEquals(trips[0].createdAt, "2025-07-15");
-  assertEquals(trips[0].facetIds, []);
+  assertEquals(trips[0].kitIds, []);
   assertEquals(trips[0].checked, new Set());
 });
 
@@ -67,10 +67,10 @@ Deno.test("renameTrip - renames existing trip", () => {
 
 Deno.test("renameTrip - preserves other fields", () => {
   let trips = createTrip([], t1, "Squamish", "2025-07-15");
-  trips = addFacetToTrip(trips, t1, f1);
+  trips = addKitToTrip(trips, t1, f1);
   trips = toggleChecked(trips, t1, i1);
   const renamed = renameTrip(trips, t1, "New Name");
-  assertEquals(renamed[0].facetIds, [f1]);
+  assertEquals(renamed[0].kitIds, [f1]);
   assertEquals(renamed[0].checked, new Set([i1]));
   assertEquals(renamed[0].createdAt, "2025-07-15");
 });
@@ -92,49 +92,49 @@ Deno.test("renameTrip - throws on empty name", () => {
   );
 });
 
-Deno.test("addFacetToTrip - adds facet", () => {
+Deno.test("addKitToTrip - adds kit", () => {
   const trips = createTrip([], t1, "Squamish", "2025-07-15");
-  assertEquals(addFacetToTrip(trips, t1, f1)[0].facetIds, [f1]);
+  assertEquals(addKitToTrip(trips, t1, f1)[0].kitIds, [f1]);
 });
 
-Deno.test("addFacetToTrip - adds multiple facets preserving order", () => {
+Deno.test("addKitToTrip - adds multiple kits preserving order", () => {
   let trips = createTrip([], t1, "Squamish", "2025-07-15");
-  trips = addFacetToTrip(trips, t1, f2);
-  trips = addFacetToTrip(trips, t1, f1);
-  assertEquals(trips[0].facetIds, [f2, f1]);
+  trips = addKitToTrip(trips, t1, f2);
+  trips = addKitToTrip(trips, t1, f1);
+  assertEquals(trips[0].kitIds, [f2, f1]);
 });
 
-Deno.test("addFacetToTrip - idempotent", () => {
+Deno.test("addKitToTrip - idempotent", () => {
   let trips = createTrip([], t1, "Squamish", "2025-07-15");
-  trips = addFacetToTrip(trips, t1, f1);
-  trips = addFacetToTrip(trips, t1, f1);
-  assertEquals(trips[0].facetIds, [f1]);
+  trips = addKitToTrip(trips, t1, f1);
+  trips = addKitToTrip(trips, t1, f1);
+  assertEquals(trips[0].kitIds, [f1]);
 });
 
-Deno.test("addFacetToTrip - throws on nonexistent trip", () => {
+Deno.test("addKitToTrip - throws on nonexistent trip", () => {
   assertThrows(
-    () => addFacetToTrip([], t1, f1),
+    () => addKitToTrip([], t1, f1),
     Error,
     "Invariant violation",
   );
 });
 
-Deno.test("removeFacetFromTrip - removes facet", () => {
+Deno.test("removeKitFromTrip - removes kit", () => {
   let trips = createTrip([], t1, "Squamish", "2025-07-15");
-  trips = addFacetToTrip(trips, t1, f1);
-  assertEquals(removeFacetFromTrip(trips, t1, f1)[0].facetIds, []);
+  trips = addKitToTrip(trips, t1, f1);
+  assertEquals(removeKitFromTrip(trips, t1, f1)[0].kitIds, []);
 });
 
-Deno.test("removeFacetFromTrip - preserves other facets and order", () => {
+Deno.test("removeKitFromTrip - preserves other kits and order", () => {
   let trips = createTrip([], t1, "Squamish", "2025-07-15");
-  trips = addFacetToTrip(trips, t1, f1);
-  trips = addFacetToTrip(trips, t1, f2);
-  assertEquals(removeFacetFromTrip(trips, t1, f1)[0].facetIds, [f2]);
+  trips = addKitToTrip(trips, t1, f1);
+  trips = addKitToTrip(trips, t1, f2);
+  assertEquals(removeKitFromTrip(trips, t1, f1)[0].kitIds, [f2]);
 });
 
-Deno.test("removeFacetFromTrip - throws on nonexistent trip", () => {
+Deno.test("removeKitFromTrip - throws on nonexistent trip", () => {
   assertThrows(
-    () => removeFacetFromTrip([], t1, f1),
+    () => removeKitFromTrip([], t1, f1),
     Error,
     "Invariant violation",
   );
@@ -238,22 +238,22 @@ Deno.test("property: resetChecks always yields empty checked set", () => {
   );
 });
 
-Deno.test("property: add then remove facet is identity on facetIds", () => {
+Deno.test("property: add then remove kit is identity on kitIds", () => {
   fc.assert(
     fc.property(
       fc.constantFrom(f1, f2),
       (fId) => {
         let trips = createTrip([], t1, "Test", "2025-01-01");
-        trips = addFacetToTrip(trips, t1, fId);
-        assertEquals(removeFacetFromTrip(trips, t1, fId)[0].facetIds, []);
+        trips = addKitToTrip(trips, t1, fId);
+        assertEquals(removeKitFromTrip(trips, t1, fId)[0].kitIds, []);
       },
     ),
   );
 });
 
-Deno.test("duplicateTrip reuses facets with fresh progress and leaves the original intact", () => {
+Deno.test("duplicateTrip reuses kits with fresh progress and leaves the original intact", () => {
   const source = toggleChecked(
-    addFacetToTrip(createTrip([], t1, "Coast", "2026-01-01"), t1, f1),
+    addKitToTrip(createTrip([], t1, "Coast", "2026-01-01"), t1, f1),
     t1,
     i1,
   );
@@ -263,11 +263,11 @@ Deno.test("duplicateTrip reuses facets with fresh progress and leaves the origin
     id: t2,
     name: "Coast again",
     createdAt: "2026-11-10",
-    facetIds: [f1],
+    kitIds: [f1],
     checked: new Set<ItemId>(),
   });
-  const changed = toggleChecked(removeFacetFromTrip(result, t2, f1), t2, i2);
-  assertEquals(changed[0].facetIds, [f1]);
+  const changed = toggleChecked(removeKitFromTrip(result, t2, f1), t2, i2);
+  assertEquals(changed[0].kitIds, [f1]);
   assertEquals(changed[0].checked, new Set([i1]));
 });
 
@@ -282,14 +282,14 @@ Deno.test("duplicateTrip rejects missing sources, duplicate IDs and empty names"
 
 Deno.test("archiving preserves packing progress, can be restored, and copies start active", () => {
   const original = toggleChecked(
-    addFacetToTrip(createTrip([], t1, "Coast", "2026-11-10"), t1, f1),
+    addKitToTrip(createTrip([], t1, "Coast", "2026-11-10"), t1, f1),
     t1,
     i1,
   );
   const archived = setTripArchived(original, t1, true);
   assertEquals(archived[0].archived, true);
   assertEquals(archived[0].checked, original[0].checked);
-  assertEquals(archived[0].facetIds, original[0].facetIds);
+  assertEquals(archived[0].kitIds, original[0].kitIds);
   assertEquals(original[0].archived, undefined);
   assertEquals(setTripArchived(archived, t1, false)[0].archived, false);
   assertEquals(

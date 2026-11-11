@@ -11,7 +11,7 @@ export const icon = (name: string) => {
     trash: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7",
     trips:
       "M5 7h14a2 2 0 0 1 2 2v11H3V9a2 2 0 0 1 2-2ZM8 7V3h8v4M8 11v5M16 11v5",
-    facets: "m12 3 10 5-10 5L2 8l10-5ZM2 12l10 5 10-5M2 16l10 5 10-5",
+    kits: "m12 3 10 5-10 5L2 8l10-5ZM2 12l10 5 10-5M2 16l10 5 10-5",
     items: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
     check: "m5 12 4 4L19 6",
     search: "M21 21l-6-6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z",
@@ -419,6 +419,6 @@ export function showDialog(options: DialogOptions): Promise<string | null> {
   });
 }
 
-export function navigate(view: "trips" | "facets" | "items") {
+export function navigate(view: "trips" | "kits" | "items") {
   document.dispatchEvent(new CustomEvent("app-navigate", { detail: view }));
 }

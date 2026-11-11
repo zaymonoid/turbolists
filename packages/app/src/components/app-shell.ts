@@ -4,7 +4,7 @@ import { fromStore } from "@zaymonoid/katha/lit";
 import { store } from "../store/index.ts";
 import type { AppState } from "../store/state.ts";
 import { icon } from "./ui.ts";
-import "./facets-view.ts";
+import "./kits-view.ts";
 import "./trips-view.ts";
 import "./items-view.ts";
 
@@ -178,7 +178,7 @@ export class AppShell extends LitElement {
         : nothing}
       <main class="content">
         ${v === "trips" ? html`<trips-view></trips-view>` : nothing}
-        ${v === "facets" ? html`<facets-view></facets-view>` : nothing}
+        ${v === "kits" ? html`<kits-view></kits-view>` : nothing}
         ${v === "items" ? html`<items-view></items-view>` : nothing}
       </main>
       ${this.undo.value
@@ -196,7 +196,7 @@ export class AppShell extends LitElement {
           </div>`
         : nothing}
       <nav aria-label="Main navigation">
-        ${(["trips", "facets", "items"] as const).map(
+        ${(["trips", "kits", "items"] as const).map(
           (tab) => html`
             <button
               class="tab ${v === tab ? "active" : ""}"

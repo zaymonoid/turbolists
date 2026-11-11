@@ -5,22 +5,22 @@ import { customElement, state } from "lit/decorators.js";
 import { fromStore } from "@zaymonoid/katha/lit";
 import { store } from "../store/index.ts";
 import type { AppState } from "../store/state.ts";
-import { newFacetId, newItemId } from "../ids.ts";
-import type { Facet } from "@turbolists/core/facet";
+import { newKitId, newItemId } from "../ids.ts";
+import type { Kit } from "@turbolists/core/kit";
 import type { Item } from "@turbolists/core/item";
-import { facetUsage } from "@turbolists/core/views";
+import { kitUsage } from "@turbolists/core/views";
 import { icon, showDialog, viewStyles } from "./ui.ts";
 
-@customElement("facets-view")
-export class FacetsView extends LitElement {
+@customElement("kits-view")
+export class KitsView extends LitElement {
   static styles = [
     viewStyles,
     css`
-      .facet-body {
+      .kit-body {
         border-top: 1px solid var(--line);
         padding: 18px;
       }
-      .facet-body .search {
+      .kit-body .search {
         margin: 16px 0 8px;
       }
       .chip {
@@ -58,42 +58,42 @@ export class FacetsView extends LitElement {
       }
     `,
   ];
-  private facets = fromStore(this, store, (s: AppState) => s.data.facets);
+  private kits = fromStore(this, store, (s: AppState) => s.data.kits);
   private items = fromStore(this, store, (s: AppState) => s.data.items);
   private usage = fromStore(
     this,
     store,
-    (s: AppState) => facetUsage(s.data.facets, s.data.trips),
+    (s: AppState) => kitUsage(s.data.kits, s.data.trips),
   );
   @state()
   private expanded: string | null = null;
   @state()
   private query = "";
   @state()
-  private facetQuery = "";
+  private kitQuery = "";
 
   private async add() {
     const name = await showDialog({
-      title: "New facet",
+      title: "New kit",
       message:
-        "A facet is a reusable group of items, like Essentials, Beach, or Cold weather.",
-      value: this.facetQuery.trim(),
+        "A kit is a reusable group of items, like Essentials, Beach, or Cold weather.",
+      value: this.kitQuery.trim(),
       placeholder: "e.g. Essentials",
       confirm: "Add",
     });
     if (!name) return;
-    const id = newFacetId();
-    store.put({ id: "facet/create", data: { id, name } });
-    this.facetQuery = "";
+    const id = newKitId();
+    store.put({ id: "kit/create", data: { id, name } });
+    this.kitQuery = "";
     this.expanded = id;
     this.query = "";
     await this.updateComplete;
     this.renderRoot
-      .querySelector(`[data-facet-id="${id}"]`)
+      .querySelector(`[data-kit-id="${id}"]`)
       ?.scrollIntoView({ block: "nearest" });
   }
   private async useEssentials() {
-    const id = newFacetId();
+    const id = newKitId();
     const essentials = [
       "Phone charger",
       "Toothbrush",
@@ -102,7 +102,7 @@ export class FacetsView extends LitElement {
       "Socks",
       "ID & wallet",
     ];
-    store.put({ id: "facet/create", data: { id, name: "Essentials" } });
+    store.put({ id: "kit/create", data: { id, name: "Essentials" } });
     for (const name of essentials) {
       const existing = this.items.value.find(
         (item) =>
@@ -112,26 +112,26 @@ export class FacetsView extends LitElement {
       if (!existing) {
         store.put({ id: "item/create", data: { id: itemId, name } });
       }
-      store.put({ id: "facet/add-item", data: { facetId: id, itemId } });
+      store.put({ id: "kit/add-item", data: { kitId: id, itemId } });
     }
     this.expanded = id;
     this.query = "";
     await this.updateComplete;
     this.renderRoot
-      .querySelector(`[data-facet-id="${id}"]`)
+      .querySelector(`[data-kit-id="${id}"]`)
       ?.scrollIntoView({ block: "nearest" });
   }
-  private async rename(facet: Facet) {
-    const name = await showDialog({ title: "Rename facet", value: facet.name });
-    if (name) store.put({ id: "facet/rename", data: { id: facet.id, name } });
+  private async rename(kit: Kit) {
+    const name = await showDialog({ title: "Rename kit", value: kit.name });
+    if (name) store.put({ id: "kit/rename", data: { id: kit.id, name } });
   }
-  private async handleDelete(facet: Facet) {
-    const count = this.usage.value.get(facet.id) ?? 0;
+  private async handleDelete(kit: Kit) {
+    const count = this.usage.value.get(kit.id) ?? 0;
     const confirmed = await showDialog({
-      title: `Delete “${facet.name}”?`,
+      title: `Delete “${kit.name}”?`,
       message: `Your items stay in the library.${
         count
-          ? ` This facet will also be removed from ${count} trip${
+          ? ` This kit will also be removed from ${count} trip${
             count === 1 ? "" : "s"
           }.`
           : ""
@@ -139,14 +139,14 @@ export class FacetsView extends LitElement {
       confirm: "Delete",
       destructive: true,
     });
-    if (confirmed) store.put({ id: "facet/delete", data: { id: facet.id } });
+    if (confirmed) store.put({ id: "kit/delete", data: { id: kit.id } });
   }
-  private suggestions(facet: Facet) {
+  private suggestions(kit: Kit) {
     const q = this.query.trim().toLocaleLowerCase();
     return this.items.value
       .filter(
         (i) =>
-          !facet.itemIds.includes(i.id) &&
+          !kit.itemIds.includes(i.id) &&
           i.name.toLocaleLowerCase().includes(q),
       )
       .sort((a, b) => {
@@ -158,64 +158,64 @@ export class FacetsView extends LitElement {
       })
       .slice(0, 8);
   }
-  private select(facet: Facet, item?: Item) {
+  private select(kit: Kit, item?: Item) {
     const name = this.query.trim();
     if (!item && !name) return;
     const id = item?.id ?? newItemId();
     if (!item) store.put({ id: "item/create", data: { id, name } });
     store.put({
-      id: "facet/add-item",
-      data: { facetId: facet.id, itemId: id },
+      id: "kit/add-item",
+      data: { kitId: kit.id, itemId: id },
     });
     this.query = "";
-    // The event's owning facet is explicit; no positional DOM lookup is needed.
+    // The event's owning kit is explicit; no positional DOM lookup is needed.
   }
   render() {
-    const facets = this.facets.value;
-    const search = this.facetQuery.trim().toLocaleLowerCase();
+    const kits = this.kits.value;
+    const search = this.kitQuery.trim().toLocaleLowerCase();
     const itemMap = new Map(this.items.value.map((item) => [item.id, item]));
-    const matching = facets.filter(
-      (facet) =>
-        facet.name.toLocaleLowerCase().includes(search) ||
-        facet.itemIds.some((id) =>
+    const matching = kits.filter(
+      (kit) =>
+        kit.name.toLocaleLowerCase().includes(search) ||
+        kit.itemIds.some((id) =>
           itemMap.get(id)?.name.toLocaleLowerCase().includes(search)
         ),
     );
     return html`
       <header class="header">
         <div>
-          <h1>Facets</h1>
+          <h1>Kits</h1>
           <p class="subtitle">Pack for every part of your trip.</p>
         </div>
-        <button class="add-button" aria-label="New facet" @click=${this.add}>
+        <button class="add-button" aria-label="New kit" @click=${this.add}>
           ${icon("plus")}
         </button>
       </header>
       <div class="body">
-        ${facets.length
+        ${kits.length
           ? html`
             <label class="search"
             >${icon("search")}<input
                             type="search"
-                            aria-label="Search facets"
-                            placeholder="Search facets or their items"
-                            .value=${this.facetQuery}
+                            aria-label="Search kits"
+                            placeholder="Search kits or their items"
+                            .value=${this.kitQuery}
                             @input=${(e: Event) => {
-                              this.facetQuery =
+                              this.kitQuery =
                                 (e.target as HTMLInputElement).value;
                             }}
                         /></label>
           `
           : null}
-        ${facets.length && !matching.length
+        ${kits.length && !matching.length
           ? html`
             <div class="empty">
-              <h2>No facets found</h2>
-              <p>Search by a facet name or an item it contains.</p>
+              <h2>No kits found</h2>
+              <p>Search by a kit name or an item it contains.</p>
               <button
                 class="text-button"
                 @click=${() => {
-                  this.facetQuery = "";
+                  this.kitQuery = "";
                 }}
               >
                             Clear search
@@ -223,17 +223,17 @@ export class FacetsView extends LitElement {
             </div>
           `
           : null}
-        ${!facets.length
+        ${!kits.length
           ? html`
             <div class="empty">
-              <div class="empty-icon">${icon("facets")}</div>
+              <div class="empty-icon">${icon("kits")}</div>
               <h2>Build once. Pack again.</h2>
               <p>
-                Group items into facets like Essentials or Beach. Combine them
+                Group items into kits like Essentials or Beach. Combine them
                 for a trip and we’ll handle the overlap.
               </p>
               <button class="primary" @click=${this.add}>
-                ${icon("plus")} Create your first facet
+                ${icon("plus")} Create your first kit
               </button>
               <p class="hint" style="margin-top:24px;margin-bottom:4px">
                 Want a head start?
@@ -243,33 +243,33 @@ export class FacetsView extends LitElement {
               </button>
             </div>
           `
-          : repeat(matching, (facet) => facet.id, (facet) => {
-            const expanded = this.expanded === facet.id;
-            const count = this.usage.value.get(facet.id) ?? 0;
-            const suggestions = this.suggestions(facet);
+          : repeat(matching, (kit) => kit.id, (kit) => {
+            const expanded = this.expanded === kit.id;
+            const count = this.usage.value.get(kit.id) ?? 0;
+            const suggestions = this.suggestions(kit);
             const q = this.query.trim();
             const exactMatch = this.items.value.find(
               (i) =>
                 i.name.trim().toLocaleLowerCase() === q.toLocaleLowerCase(),
             );
             return html`
-              <section class="card" data-facet-id=${facet.id} ${listMotion()}>
+              <section class="card" data-kit-id=${kit.id} ${listMotion()}>
                 <button
                   class="card-main"
                   aria-expanded=${expanded}
                   @click=${() => {
-                    this.expanded = expanded ? null : facet.id;
+                    this.expanded = expanded ? null : kit.id;
                     this.query = "";
                   }}
                 >
                   <span class="card-title"
-                    >${facet.name}${icon(
+                    >${kit.name}${icon(
                       expanded ? "close" : "chevron",
                     )}</span
                   >
                   <div class="meta">
-                    ${facet.itemIds.length}
-                    item${facet.itemIds.length === 1 ? "" : "s"} ·
+                    ${kit.itemIds.length}
+                    item${kit.itemIds.length === 1 ? "" : "s"} ·
                     ${count
                       ? `Used in ${count} trip${count === 1 ? "" : "s"}`
                       : "Ready for your next trip"}
@@ -277,18 +277,18 @@ export class FacetsView extends LitElement {
                 </button>
                 ${expanded
                   ? html`
-                    <div class="facet-body">
+                    <div class="kit-body">
                       ${count
                         ? html`<p class="meta">Changes here update ${
                           count === 1
-                            ? "the trip using this facet"
-                            : `all ${count} trips using this facet`
+                            ? "the trip using this kit"
+                            : `all ${count} trips using this kit`
                         }, including archived trips.</p>`
                         : null}
-                      ${facet.itemIds.length
+                      ${kit.itemIds.length
                         ? html`<div class="chips">
                                 ${
-                          facet.itemIds.map((id) => {
+                          kit.itemIds.map((id) => {
                             const name = this.items.value.find((i) =>
                               i.id === id
                             )
@@ -297,12 +297,12 @@ export class FacetsView extends LitElement {
                               <span class="chip"
                               >${name}<button
                                   class="icon-button"
-                                  aria-label=${`Remove ${name} from ${facet.name}`}
+                                  aria-label=${`Remove ${name} from ${kit.name}`}
                                   @click=${() =>
                                     store.put({
-                                      id: "facet/remove-item",
+                                      id: "kit/remove-item",
                                       data: {
-                                        facetId: facet.id,
+                                        kitId: kit.id,
                                         itemId: id,
                                       },
                                     })}
@@ -319,7 +319,7 @@ export class FacetsView extends LitElement {
                               </p>`}
                       <label class="search"
                         >${icon("search")}<input
-                          aria-label=${`Add item to ${facet.name}`}
+                          aria-label=${`Add item to ${kit.name}`}
                           placeholder="Find or create an item"
                           .value=${this.query}
                           @input=${(e: Event) => {
@@ -331,9 +331,9 @@ export class FacetsView extends LitElement {
                             if (e.key === "Enter") {
                               e.preventDefault();
                               if (suggestions[0]) {
-                                this.select(facet, suggestions[0]);
+                                this.select(kit, suggestions[0]);
                               } else if (q && !exactMatch) {
-                                this.select(facet);
+                                this.select(kit);
                               }
                             }
                             if (e.key === "Escape") {
@@ -349,7 +349,7 @@ export class FacetsView extends LitElement {
                           html`
                             <button
                               class="suggestion"
-                              @click=${() => this.select(facet, item)}
+                              @click=${() => this.select(kit, item)}
                             >
                                                             ＋ ${item.name}
                                                           </button>
@@ -359,27 +359,27 @@ export class FacetsView extends LitElement {
                         ? html`
                           <button
                             class="suggestion create"
-                            @click=${() => this.select(facet)}
+                            @click=${() => this.select(kit)}
                           >
                             ＋ Create “${q}”
                           </button>
                         `
                         : q &&
                             exactMatch &&
-                            facet.itemIds.includes(exactMatch.id)
-                        ? html`<p class="hint">Already in this facet.</p>`
+                            kit.itemIds.includes(exactMatch.id)
+                        ? html`<p class="hint">Already in this kit.</p>`
                         : null}
                     </div>
                     <div class="toolbar">
                       <button
                         class="text-button"
-                        @click=${() => this.rename(facet)}
+                        @click=${() => this.rename(kit)}
                       >
                         Rename</button
                       ><button
                         class="icon-button danger"
-                        aria-label=${`Delete ${facet.name}`}
-                        @click=${() => this.handleDelete(facet)}
+                        aria-label=${`Delete ${kit.name}`}
+                        @click=${() => this.handleDelete(kit)}
                       >
                         ${icon("trash")}
                       </button>

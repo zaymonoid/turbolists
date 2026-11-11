@@ -152,7 +152,7 @@ mod tests {
         let path = temp_path("round_trip.json");
         cleanup(&path);
 
-        let data = r#"{"items":[],"facets":[],"trips":[]}"#;
+        let data = r#"{"items":[],"kits":[],"trips":[]}"#;
         write_store_file(&path, data).unwrap();
         let result = read_store_file(&path).unwrap();
         assert_eq!(result, data);

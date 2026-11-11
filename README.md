@@ -1,10 +1,10 @@
 # turbolists
 
-A packing-list app. Define items, group them into facets (e.g. "beach", "cold weather"), and combine facets into trips to get a checklist. Add items to your library, reuse trips with a fresh checklist, and archive past trips while keeping their progress.
+A packing-list app. Define items, group them into kits (e.g. "beach", "cold weather"), and combine kits into trips to get a checklist. Add items to your library, reuse trips with a fresh checklist, and archive past trips while keeping their progress.
 
 ## Layout
 
-- `packages/core`: domain logic (items, facets, trips, store, views). Plain TypeScript, run and tested with Deno.
+- `packages/core`: domain logic (items, kits, trips, store, views). Plain TypeScript, run and tested with Deno.
 - `packages/app`: Tauri desktop app with a Lit + Vite frontend. Imports core via the `@turbolists/core/*` alias. Data is persisted to `store.json` in the app data dir via Rust commands.
 
 ## Prerequisites
@@ -88,7 +88,7 @@ deno task test:ios
 ```
 
 The smoke test connects to a real MCP server, drives the installed simulator app,
-creates a library item and a facet, searches and packs a trip, verifies
+creates a library item and a kit, searches and packs a trip, verifies
 the native share sheet without sending anything, saved progress and archive state
 after restarting the app, reuses a trip with
 independent progress, checks reset confirmation and Undo across tabs, and removes

@@ -1,30 +1,30 @@
 import { assertEquals } from "@std/assert";
 import * as fc from "fast-check";
 import {
-  deleteStoreFacet,
+  deleteStoreKit,
   deleteStoreItem,
   emptyStore,
   loadStore,
   type Store,
   storeToJson,
 } from "./store.ts";
-import { facetId, itemId, tripId } from "./ids.ts";
-import type { FacetId, ItemId, TripId } from "./ids.ts";
+import { kitId, itemId, tripId } from "./ids.ts";
+import type { KitId, ItemId, TripId } from "./ids.ts";
 import type { Item } from "./item.ts";
-import type { Facet } from "./facet.ts";
+import type { Kit } from "./kit.ts";
 import type { Trip } from "./trip.ts";
 
 const i1 = itemId("i1");
 const i2 = itemId("i2");
-const f1 = facetId("f1");
-const f2 = facetId("f2");
+const f1 = kitId("f1");
+const f2 = kitId("f2");
 const t1 = tripId("t1");
 
 function makeItem(id: ItemId, name: string, notes?: string): Item {
   return notes !== undefined ? { id, name, notes } : { id, name };
 }
 
-function makeFacet(id: FacetId, name: string, itemIds: ItemId[]): Facet {
+function makeKit(id: KitId, name: string, itemIds: ItemId[]): Kit {
   return { id, name, itemIds };
 }
 
@@ -32,10 +32,10 @@ function makeTrip(
   id: TripId,
   name: string,
   createdAt: string,
-  fIds: FacetId[],
+  fIds: KitId[],
   checked: ItemId[],
 ): Trip {
-  return { id, name, createdAt, facetIds: fIds, checked: new Set(checked) };
+  return { id, name, createdAt, kitIds: fIds, checked: new Set(checked) };
 }
 
 // emptyStore
@@ -43,7 +43,7 @@ function makeTrip(
 Deno.test("emptyStore - returns empty collections", () => {
   const store = emptyStore();
   assertEquals(store.items.length, 0);
-  assertEquals(store.facets.length, 0);
+  assertEquals(store.kits.length, 0);
   assertEquals(store.trips.length, 0);
 });
 
@@ -52,7 +52,7 @@ Deno.test("emptyStore - returns empty collections", () => {
 Deno.test("storeToJson - serializes empty store", () => {
   assertEquals(JSON.parse(storeToJson(emptyStore())), {
     items: [],
-    facets: [],
+    kits: [],
     trips: [],
   });
 });
@@ -64,7 +64,7 @@ Deno.test("storeToJson - ends with newline", () => {
 Deno.test("storeToJson - serializes items with notes", () => {
   const store: Store = {
     items: [makeItem(i1, "Headlamp", "BD Spot")],
-    facets: [],
+    kits: [],
     trips: [],
   };
   assertEquals(JSON.parse(storeToJson(store)).items, [
@@ -75,7 +75,7 @@ Deno.test("storeToJson - serializes items with notes", () => {
 Deno.test("storeToJson - omits notes when undefined", () => {
   const store: Store = {
     items: [makeItem(i1, "Headlamp")],
-    facets: [],
+    kits: [],
     trips: [],
   };
   assertEquals(
@@ -84,14 +84,14 @@ Deno.test("storeToJson - omits notes when undefined", () => {
   );
 });
 
-Deno.test("storeToJson - preserves facet itemIds order", () => {
+Deno.test("storeToJson - preserves kit itemIds order", () => {
   const store: Store = {
     items: [],
-    facets: [makeFacet(f1, "Trad", [itemId("i3"), i1, i2])],
+    kits: [makeKit(f1, "Trad", [itemId("i3"), i1, i2])],
     trips: [],
   };
   assertEquals(
-    JSON.parse(storeToJson(store)).facets[0].itemIds,
+    JSON.parse(storeToJson(store)).kits[0].itemIds,
     ["i3", "i1", "i2"],
   );
 });
@@ -99,11 +99,11 @@ Deno.test("storeToJson - preserves facet itemIds order", () => {
 Deno.test("storeToJson - serializes trip checked as sorted array", () => {
   const store: Store = {
     items: [],
-    facets: [],
+    kits: [],
     trips: [makeTrip(t1, "Test", "2025-01-01", [f2, f1], [itemId("i3"), i1])],
   };
   const parsed = JSON.parse(storeToJson(store)).trips[0];
-  assertEquals(parsed.facetIds, ["f2", "f1"]);
+  assertEquals(parsed.kitIds, ["f2", "f1"]);
   assertEquals(parsed.checked, ["i1", "i3"]); // sorted
 });
 
@@ -120,7 +120,7 @@ Deno.test("loadStore - loads from undefined", () => {
 Deno.test("loadStore - loads from empty object", () => {
   const store = loadStore({});
   assertEquals(store.items.length, 0);
-  assertEquals(store.facets.length, 0);
+  assertEquals(store.kits.length, 0);
   assertEquals(store.trips.length, 0);
 });
 
@@ -138,11 +138,11 @@ Deno.test("loadStore - items without notes omit the field", () => {
   assertEquals(store.items[0].hasOwnProperty("notes"), false);
 });
 
-Deno.test("loadStore - loads facet itemIds as array", () => {
+Deno.test("loadStore - loads kit itemIds as array", () => {
   const store = loadStore({
-    facets: [{ id: "f1", name: "Trad", itemIds: ["i1", "i2"] }],
+    kits: [{ id: "f1", name: "Trad", itemIds: ["i1", "i2"] }],
   });
-  assertEquals(store.facets[0].itemIds, [i1, i2]);
+  assertEquals(store.kits[0].itemIds, [i1, i2]);
 });
 
 Deno.test("loadStore - loads trip checked as Set", () => {
@@ -151,24 +151,24 @@ Deno.test("loadStore - loads trip checked as Set", () => {
       id: "t1",
       name: "Test",
       createdAt: "2025-01-01",
-      facetIds: ["f1"],
+      kitIds: ["f1"],
       checked: ["i1", "i2"],
     }],
   });
-  assertEquals(store.trips[0].facetIds, [facetId("f1")]);
+  assertEquals(store.trips[0].kitIds, [kitId("f1")]);
   assertEquals(store.trips[0].checked, new Set([i1, i2]));
 });
 
-Deno.test("loadStore - handles missing facet itemIds", () => {
-  const store = loadStore({ facets: [{ id: "f1", name: "Trad" }] });
-  assertEquals(store.facets[0].itemIds, []);
+Deno.test("loadStore - handles missing kit itemIds", () => {
+  const store = loadStore({ kits: [{ id: "f1", name: "Trad" }] });
+  assertEquals(store.kits[0].itemIds, []);
 });
 
-Deno.test("loadStore - handles missing trip facetIds and checked", () => {
+Deno.test("loadStore - handles missing trip kitIds and checked", () => {
   const store = loadStore({
     trips: [{ id: "t1", name: "Test", createdAt: "2025-01-01" }],
   });
-  assertEquals(store.trips[0].facetIds, []);
+  assertEquals(store.trips[0].kitIds, []);
   assertEquals(store.trips[0].checked, new Set());
 });
 
@@ -185,15 +185,15 @@ Deno.test("loadStore - deduplicates items by id", () => {
   assertEquals(store.items[0].name, "First");
 });
 
-Deno.test("loadStore - deduplicates facets by id", () => {
+Deno.test("loadStore - deduplicates kits by id", () => {
   const store = loadStore({
-    facets: [
+    kits: [
       { id: "f1", name: "First", itemIds: [] },
       { id: "f1", name: "Duplicate", itemIds: [] },
     ],
   });
-  assertEquals(store.facets.length, 1);
-  assertEquals(store.facets[0].name, "First");
+  assertEquals(store.kits.length, 1);
+  assertEquals(store.kits[0].name, "First");
 });
 
 Deno.test("loadStore - deduplicates trips by id", () => {
@@ -207,23 +207,23 @@ Deno.test("loadStore - deduplicates trips by id", () => {
   assertEquals(store.trips[0].name, "First");
 });
 
-Deno.test("loadStore - deduplicates facet itemIds", () => {
+Deno.test("loadStore - deduplicates kit itemIds", () => {
   const store = loadStore({
-    facets: [{ id: "f1", name: "Trad", itemIds: ["i1", "i2", "i1"] }],
+    kits: [{ id: "f1", name: "Trad", itemIds: ["i1", "i2", "i1"] }],
   });
-  assertEquals(store.facets[0].itemIds, [i1, i2]);
+  assertEquals(store.kits[0].itemIds, [i1, i2]);
 });
 
-Deno.test("loadStore - deduplicates trip facetIds", () => {
+Deno.test("loadStore - deduplicates trip kitIds", () => {
   const store = loadStore({
     trips: [{
       id: "t1",
       name: "Test",
       createdAt: "2025-01-01",
-      facetIds: ["f1", "f2", "f1"],
+      kitIds: ["f1", "f2", "f1"],
     }],
   });
-  assertEquals(store.trips[0].facetIds, [facetId("f1"), facetId("f2")]);
+  assertEquals(store.trips[0].kitIds, [kitId("f1"), kitId("f2")]);
 });
 
 // Round-trip tests
@@ -237,7 +237,7 @@ Deno.test("round-trip: empty store", () => {
 Deno.test("round-trip: store with data", () => {
   const original: Store = {
     items: [makeItem(i1, "Headlamp", "BD Spot"), makeItem(i2, "Harness")],
-    facets: [makeFacet(f1, "Trad Rack", [i1, i2]), makeFacet(f2, "Camp", [])],
+    kits: [makeKit(f1, "Trad Rack", [i1, i2]), makeKit(f2, "Camp", [])],
     trips: [makeTrip(t1, "Squamish", "2025-07-15", [f1, f2], [i1])],
   };
   const roundTripped = loadStore(JSON.parse(storeToJson(original)));
@@ -247,7 +247,7 @@ Deno.test("round-trip: store with data", () => {
 // Property-based round-trip
 
 const arbItemId = fc.string({ minLength: 1, maxLength: 10 }).map(itemId);
-const arbFacetId = fc.string({ minLength: 1, maxLength: 10 }).map(facetId);
+const arbKitId = fc.string({ minLength: 1, maxLength: 10 }).map(kitId);
 const arbTripId = fc.string({ minLength: 1, maxLength: 10 }).map(tripId);
 const arbName = fc
   .string({ minLength: 1, maxLength: 20 })
@@ -271,25 +271,25 @@ const arbStore = fc
   .array(arbItem, { minLength: 0, maxLength: 5 })
   .chain((items) => {
     const iIds = items.map((i) => i.id);
-    const arbFacet = fc.record({
-      id: arbFacetId,
+    const arbKit = fc.record({
+      id: arbKitId,
       name: arbName,
       itemIds: fc.subarray(iIds),
     });
     return fc
-      .array(arbFacet, { minLength: 0, maxLength: 3 })
-      .chain((facets) => {
-        const fIds = facets.map((f) => f.id);
+      .array(arbKit, { minLength: 0, maxLength: 3 })
+      .chain((kits) => {
+        const fIds = kits.map((f) => f.id);
         const arbTrip = fc.record({
           id: arbTripId,
           name: arbName,
           createdAt: fc.string({ minLength: 1, maxLength: 20 }),
-          facetIds: fc.subarray(fIds),
+          kitIds: fc.subarray(fIds),
           checked: fc.subarray(iIds).map((ids) => new Set(ids)),
         });
         return fc
           .array(arbTrip, { minLength: 0, maxLength: 3 })
-          .map((trips): Store => ({ items, facets, trips }));
+          .map((trips): Store => ({ items, kits, trips }));
       });
   });
 
@@ -304,52 +304,52 @@ Deno.test("property: round-trip preserves all data", () => {
 
 function assertStoreEqual(actual: Store, expected: Store): void {
   assertEquals(actual.items, expected.items);
-  assertEquals(actual.facets, expected.facets);
+  assertEquals(actual.kits, expected.kits);
   assertEquals(actual.trips.length, expected.trips.length);
   for (let i = 0; i < actual.trips.length; i++) {
     assertEquals(actual.trips[i].id, expected.trips[i].id);
     assertEquals(actual.trips[i].name, expected.trips[i].name);
     assertEquals(actual.trips[i].createdAt, expected.trips[i].createdAt);
-    assertEquals(actual.trips[i].facetIds, expected.trips[i].facetIds);
+    assertEquals(actual.trips[i].kitIds, expected.trips[i].kitIds);
     assertEquals(actual.trips[i].checked, expected.trips[i].checked);
   }
 }
 
-Deno.test("deleteStoreItem removes references across facets and packing progress", () => {
+Deno.test("deleteStoreItem removes references across kits and packing progress", () => {
   const original: Store = {
     items: [makeItem(i1, "Charger"), makeItem(i2, "Sunscreen")],
-    facets: [
-      makeFacet(f1, "Essentials", [i1]),
-      makeFacet(f2, "Beach", [i1, i2]),
+    kits: [
+      makeKit(f1, "Essentials", [i1]),
+      makeKit(f2, "Beach", [i1, i2]),
     ],
     trips: [makeTrip(t1, "Coast", "2026-11-10", [f1, f2], [i1, i2])],
   };
   const result = deleteStoreItem(original, i1);
   assertEquals(result.items.map((i) => i.id), [i2]);
-  assertEquals(result.facets.map((f) => f.itemIds), [[], [i2]]);
+  assertEquals(result.kits.map((f) => f.itemIds), [[], [i2]]);
   assertEquals([...result.trips[0].checked], [i2]);
-  assertEquals(original.facets[0].itemIds, [i1]);
+  assertEquals(original.kits[0].itemIds, [i1]);
   assertEquals([...original.trips[0].checked], [i1, i2]);
 });
 
-Deno.test("deleteStoreFacet updates every trip without deleting library items", () => {
+Deno.test("deleteStoreKit updates every trip without deleting library items", () => {
   const original: Store = {
     items: [makeItem(i1, "Charger")],
-    facets: [makeFacet(f1, "Essentials", [i1]), makeFacet(f2, "Beach", [i1])],
+    kits: [makeKit(f1, "Essentials", [i1]), makeKit(f2, "Beach", [i1])],
     trips: [makeTrip(t1, "Coast", "2026-11-10", [f1, f2], [i1])],
   };
-  const result = deleteStoreFacet(original, f1);
-  assertEquals(result.facets.map((f) => f.id), [f2]);
-  assertEquals(result.trips[0].facetIds, [f2]);
+  const result = deleteStoreKit(original, f1);
+  assertEquals(result.kits.map((f) => f.id), [f2]);
+  assertEquals(result.trips[0].kitIds, [f2]);
   assertEquals(result.items, original.items);
   assertEquals([...result.trips[0].checked], [i1]);
-  assertEquals(original.trips[0].facetIds, [f1, f2]);
+  assertEquals(original.trips[0].kitIds, [f1, f2]);
 });
 
 Deno.test("archive status round trips while legacy trips remain active", () => {
   const data = {
     items: [],
-    facets: [],
+    kits: [],
     trips: [{ id: "t1", name: "Old", createdAt: "2026-11-10", archived: true }],
   };
   assertEquals(

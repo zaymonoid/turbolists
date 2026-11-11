@@ -28,7 +28,7 @@ try {
                 id: "c",
                 name: "Charger",
               }],
-              facets: [{
+              kits: [{
                 id: "essentials",
                 name: "Essentials",
                 itemIds: ["a", "b", "c"],
@@ -37,7 +37,7 @@ try {
                 id: "t",
                 name: "Weekend",
                 createdAt: "2026-11-10",
-                facetIds: ["essentials"],
+                kitIds: ["essentials"],
                 checked: [],
               }],
             });
@@ -84,7 +84,7 @@ try {
     if (reduced && observed.motions.length) {
       throw new Error("Animations ignore reduced motion");
     }
-    await page.getByRole("button", { name: "Facets", exact: true }).tap();
+    await page.getByRole("button", { name: "Kits", exact: true }).tap();
     await page.waitForTimeout(350);
     await page.evaluate(() => (window as any).__motions = []);
     await page.getByRole("button", { name: /^Essentials 3 items/ }).tap();
@@ -98,7 +98,7 @@ try {
           m.frames.some((f: any) => f.transform?.includes("translateY"))
         )
       )
-    ) throw new Error("Missing facet layout movement");
+    ) throw new Error("Missing kit layout movement");
     await page.getByRole("button", { name: "Trips", exact: true }).tap();
     await page.getByRole("button", { name: "Open Weekend", exact: true }).tap();
     await page.waitForTimeout(350);
@@ -193,7 +193,7 @@ try {
     console.log(
       `PASS: ${
         reduced ? "reduced" : "normal"
-      } motion, keyed list identity, facet layout, packing counters, and one haptic per toggle`,
+      } motion, keyed list identity, kit layout, packing counters, and one haptic per toggle`,
     );
     await page.close();
   }

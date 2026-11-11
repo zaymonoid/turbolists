@@ -5,10 +5,10 @@ import {
   type AppState,
   dataActionIds,
 } from "../src/store/state.ts";
-import { facetId, itemId, tripId } from "@turbolists/core/ids";
+import { kitId, itemId, tripId } from "@turbolists/core/ids";
 
 const item = itemId("charger");
-const facet = facetId("essentials");
+const kit = kitId("essentials");
 const trip = tripId("coast");
 function initial(): AppState {
   return {
@@ -19,12 +19,12 @@ function initial(): AppState {
     undo: null,
     data: {
       items: [{ id: item, name: "Charger" }],
-      facets: [{ id: facet, name: "Essentials", itemIds: [item] }],
+      kits: [{ id: kit, name: "Essentials", itemIds: [item] }],
       trips: [{
         id: trip,
         name: "Coast",
         createdAt: "2026-11-10",
-        facetIds: [facet],
+        kitIds: [kit],
         checked: new Set([item]),
       }],
     },
@@ -34,11 +34,11 @@ const reduce = (state: AppState, action: AppAction) =>
   appReducer(state, action) ?? state;
 const undo: AppAction = { id: "store/undo", data: {} };
 
-Deno.test("undo restores an item, all facet references, and checked progress", () => {
+Deno.test("undo restores an item, all kit references, and checked progress", () => {
   const original = initial();
   const deleted = reduce(original, { id: "item/delete", data: { id: item } });
   assertEquals(deleted.data.items, []);
-  assertEquals(deleted.data.facets[0].itemIds, []);
+  assertEquals(deleted.data.kits[0].itemIds, []);
   assertEquals(deleted.data.trips[0].checked.size, 0);
   const restored = reduce(deleted, undo);
   assertEquals(restored.data, original.data);
@@ -47,7 +47,7 @@ Deno.test("undo restores an item, all facet references, and checked progress", (
 });
 
 Deno.test("undo survives tab changes and save acknowledgements without changing navigation", () => {
-  let state = reduce(initial(), { id: "facet/delete", data: { id: facet } });
+  let state = reduce(initial(), { id: "kit/delete", data: { id: kit } });
   state = reduce(state, { id: "nav/set-view", data: { view: "trips" } });
   state = reduce(state, { id: "store/save-status", data: { status: "saved" } });
   assert(state.undo);
@@ -79,7 +79,7 @@ Deno.test("reset and item removal can be undone; dismissal and reload clear reco
   for (
     const action of [
       { id: "trip/reset-checks", data: { tripId: trip } },
-      { id: "facet/remove-item", data: { facetId: facet, itemId: item } },
+      { id: "kit/remove-item", data: { kitId: kit, itemId: item } },
     ] as const
   ) {
     const state = reduce(initial(), action);

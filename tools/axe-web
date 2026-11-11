@@ -165,7 +165,7 @@ function flattenTree(nodes: Record<string, any>[]): Record<string, any>[] {
 }
 const roots = Array.isArray(tree) ? tree : [tree];
 const nodes = flattenTree(roots);
-const tabs = ["Trips", "Facets", "Items"].map((name) =>
+const tabs = ["Trips", "Kits", "Items"].map((name) =>
   nodes.filter((node) => node.type === "Button" && node.AXLabel === name)
     .sort((a, b) => b.frame.y - a.frame.y)[0]
 );

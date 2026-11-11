@@ -64,7 +64,7 @@ do not patch installed npm packages or rely on a live Node inspector override.
   active screen and can make a good interaction look broken. Keep manual input
   and other simulator automation out of a running smoke test.
 - The smoke test launches its own MCP stdio client with `simulator,ui-automation`
-  workflows. It covers item creation, facet/item reuse, search, packing, native
+  workflows. It covers item creation, kit/item reuse, search, packing, native
   sharing and dismissal, persistence across relaunch, archive/restore, trip
   reuse, reset confirmation, cascading deletion, Undo, and fixture cleanup.
 - It opens the share sheet and cancels; do not select recipients or send data
@@ -85,7 +85,7 @@ do not patch installed npm packages or rely on a live Node inspector override.
   with touch-enabled WebKit; mouse `click()` can report spurious interception.
   These fixtures must never replace the real simulator's store.
 - `deno task test:ui` runs the repeatable WebKit checks for list motion, keyed row
-  identity, facet expansion, animated counters, reduced motion, and haptic command
+  identity, kit expansion, animated counters, reduced motion, and haptic command
   dispatch. Keep Vite running on port 1420 (or set `TURBOLISTS_UI_URL`). If WebKit
   is missing, install it with `deno run -A npm:playwright-core@1.65.0 install webkit`.
 
@@ -97,7 +97,7 @@ do not patch installed npm packages or rely on a live Node inspector override.
   layout movement and entry feedback. Avoid scaling text or retaining removed,
   actionable rows as exit-animation ghosts. Within each checklist group, checked
   items move to the bottom with animation; unchecking restores their original
-  position among unpacked items. Preserve facet order within each packing state.
+  position among unpacked items. Preserve kit order within each packing state.
   The checkmark and haptic update immediately; wait 80 ms before changing row
   order so the check reads first. Keep this delay local to the UI, cancel its
   timer when leaving the view, and do not delay the store action or persistence.

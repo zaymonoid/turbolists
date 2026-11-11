@@ -1,24 +1,24 @@
-import type { FacetId, ItemId } from "./ids.ts";
+import type { KitId, ItemId } from "./ids.ts";
 import type { Item } from "./item.ts";
-import type { Facet } from "./facet.ts";
+import type { Kit } from "./kit.ts";
 import type { Trip } from "./trip.ts";
 
 /**
- * Merges item lists from the trip's selected facets, preserving
- * sub-ordering within each facet. Items appearing in multiple facets
+ * Merges item lists from the trip's selected kits, preserving
+ * sub-ordering within each kit. Items appearing in multiple kits
  * are included at their first occurrence only.
  */
 export function tripChecklist(
   trip: Trip,
-  facets: readonly Facet[],
+  kits: readonly Kit[],
 ): readonly ItemId[] {
   const seen = new Set<ItemId>();
   const result: ItemId[] = [];
-  const facetMap = new Map(facets.map((f) => [f.id, f]));
-  for (const facetId of trip.facetIds) {
-    const facet = facetMap.get(facetId);
-    if (facet === undefined) continue;
-    for (const itemId of facet.itemIds) {
+  const kitMap = new Map(kits.map((f) => [f.id, f]));
+  for (const kitId of trip.kitIds) {
+    const kit = kitMap.get(kitId);
+    if (kit === undefined) continue;
+    for (const itemId of kit.itemIds) {
       if (!seen.has(itemId)) {
         seen.add(itemId);
         result.push(itemId);
@@ -30,9 +30,9 @@ export function tripChecklist(
 
 export function packProgress(
   trip: Trip,
-  facets: readonly Facet[],
+  kits: readonly Kit[],
 ): { readonly checked: number; readonly total: number } {
-  const checklist = new Set(tripChecklist(trip, facets));
+  const checklist = new Set(tripChecklist(trip, kits));
   let checked = 0;
   for (const itemId of trip.checked) {
     if (checklist.has(itemId)) {
@@ -45,11 +45,11 @@ export function packProgress(
 /** A portable checklist, independent of the current search or unpacked filter. */
 export function formatTripChecklist(
   trip: Trip,
-  facets: readonly Facet[],
+  kits: readonly Kit[],
   items: readonly Item[],
 ): string {
   const itemMap = new Map(items.map((item) => [item.id, item]));
-  const checklist = tripChecklist(trip, facets).flatMap((id) => {
+  const checklist = tripChecklist(trip, kits).flatMap((id) => {
     const item = itemMap.get(id);
     return item ? [item] : [];
   });
@@ -66,19 +66,19 @@ export function formatTripChecklist(
     .join("\n").trimEnd();
 }
 
-export function facetUsage(
-  facets: readonly Facet[],
+export function kitUsage(
+  kits: readonly Kit[],
   trips: readonly Trip[],
-): ReadonlyMap<FacetId, number> {
-  const usage = new Map<FacetId, number>();
-  for (const facet of facets) {
-    usage.set(facet.id, 0);
+): ReadonlyMap<KitId, number> {
+  const usage = new Map<KitId, number>();
+  for (const kit of kits) {
+    usage.set(kit.id, 0);
   }
   for (const trip of trips) {
-    for (const facetId of trip.facetIds) {
-      const count = usage.get(facetId);
+    for (const kitId of trip.kitIds) {
+      const count = usage.get(kitId);
       if (count !== undefined) {
-        usage.set(facetId, count + 1);
+        usage.set(kitId, count + 1);
       }
     }
   }
@@ -87,17 +87,17 @@ export function facetUsage(
 
 export function itemUsage(
   items: readonly Item[],
-  facets: readonly Facet[],
-): ReadonlyMap<ItemId, ReadonlySet<FacetId>> {
-  const usage = new Map<ItemId, Set<FacetId>>();
+  kits: readonly Kit[],
+): ReadonlyMap<ItemId, ReadonlySet<KitId>> {
+  const usage = new Map<ItemId, Set<KitId>>();
   for (const item of items) {
     usage.set(item.id, new Set());
   }
-  for (const facet of facets) {
-    for (const itemId of facet.itemIds) {
+  for (const kit of kits) {
+    for (const itemId of kit.itemIds) {
       const set = usage.get(itemId);
       if (set !== undefined) {
-        set.add(facet.id);
+        set.add(kit.id);
       }
     }
   }

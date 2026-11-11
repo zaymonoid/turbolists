@@ -125,7 +125,7 @@ async function dismissKeyboard() {
 const suffix = Date.now().toString(36);
 const trip = `MCP trip ${suffix}`;
 const repeatTrip = `MCP repeat ${suffix}`;
-const facet = `MCP facet ${suffix}`;
+const kit = `MCP kit ${suffix}`;
 const item = `mcp item ${suffix}`;
 console.log(`iOS smoke test fixture suffix: ${suffix}`);
 
@@ -157,21 +157,21 @@ try {
   }
   console.log("PASS: create a library item through the single-item flow");
 
-  await tap("Facets", true);
-  await tap("New facet");
-  await type("e.g. Essentials", facet);
+  await tap("Kits", true);
+  await tap("New kit");
+  await type("e.g. Essentials", kit);
   await tap("Add");
-  await type(`Add item to ${facet}`, item);
+  await type(`Add item to ${kit}`, item);
   await call("key_press", { keyCode: 40 });
   await dismissKeyboard();
   await expectText(item);
-  await type("Search facets", `missing-${suffix}`);
+  await type("Search kits", `missing-${suffix}`);
   await dismissKeyboard();
-  await expectText("No facets found");
-  await type("Search facets", item);
+  await expectText("No kits found");
+  await type("Search kits", item);
   await dismissKeyboard();
   await expectText(item);
-  console.log("PASS: create facet/item and search facets by contained items");
+  console.log("PASS: create kit/item and search kits by contained items");
 
   await tap("Trips", true);
   // A previously selected trip can survive tab changes.
@@ -180,7 +180,7 @@ try {
   await tap("New trip");
   await type("e.g. Weekend on the coast", trip);
   await tap("Create");
-  await tap(`＋ ${facet}`);
+  await tap(`＋ ${kit}`);
   await type("Search checklist", `missing-${suffix}`);
   await dismissKeyboard();
   await expectText("No matching items");
@@ -275,13 +275,13 @@ try {
   await tap("Trips");
   await tap(`Delete ${trip}`);
   await tap("Delete");
-  await tap("Facets", true);
-  // Facet starts collapsed after navigating back to this screen.
+  await tap("Kits", true);
+  // Kit starts collapsed after navigating back to this screen.
   await snapshot();
-  const facetButton = targets().find((t) => t.label.startsWith(facet));
-  if (!facetButton) throw new Error(`Missing created facet: ${facet}`);
-  await call("tap", { elementRef: facetButton.ref });
-  await tap(`Delete ${facet}`);
+  const kitButton = targets().find((t) => t.label.startsWith(kit));
+  if (!kitButton) throw new Error(`Missing created kit: ${kit}`);
+  await call("tap", { elementRef: kitButton.ref });
+  await tap(`Delete ${kit}`);
   await tap("Delete");
   await tap("Items", true);
   await tap(`Delete ${item}`);

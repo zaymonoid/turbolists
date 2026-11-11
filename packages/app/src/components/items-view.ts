@@ -17,7 +17,7 @@ export class ItemsView extends LitElement {
   private usage = fromStore(
     this,
     store,
-    (s: AppState) => itemUsage(s.data.items, s.data.facets),
+    (s: AppState) => itemUsage(s.data.items, s.data.kits),
   );
   @state()
   private query = "";
@@ -47,7 +47,7 @@ export class ItemsView extends LitElement {
     const confirmed = await showDialog({
       title: `Delete “${item.name}”?`,
       message: count
-        ? `This also removes it from ${count} facet${
+        ? `This also removes it from ${count} kit${
           count === 1 ? "" : "s"
         } and all packing checklists.`
         : "This item will be removed from your library.",
@@ -94,7 +94,7 @@ export class ItemsView extends LitElement {
               <div class="empty-icon">${icon("items")}</div>
               <h2>A place for everything</h2>
               <p>
-                Add the things you pack. Reuse them across facets and trips
+                Add the things you pack. Reuse them across kits and trips
                 without making duplicate lists.
               </p>
               <button class="primary" @click=${this.add}>
@@ -127,8 +127,8 @@ export class ItemsView extends LitElement {
                       <span class="name">${item.name}</span
                       ><span class="meta"
                         >${count
-                          ? `In ${count} facet${count === 1 ? "" : "s"}`
-                          : "Not in a facet yet"}</span
+                          ? `In ${count} kit${count === 1 ? "" : "s"}`
+                          : "Not in a kit yet"}</span
                       ></button
                     ><button
                       class="icon-button danger"

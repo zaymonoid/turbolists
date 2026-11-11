@@ -1,17 +1,17 @@
-import { facetId, itemId, tripId } from "./ids.ts";
+import { kitId, itemId, tripId } from "./ids.ts";
 import { dedupe } from "./util/dedupe.ts";
 import type { Item } from "./item.ts";
-import type { Facet } from "./facet.ts";
+import type { Kit } from "./kit.ts";
 import type { Trip } from "./trip.ts";
 
 export interface Store {
   readonly items: readonly Item[];
-  readonly facets: readonly Facet[];
+  readonly kits: readonly Kit[];
   readonly trips: readonly Trip[];
 }
 
 export function emptyStore(): Store {
-  return { items: [], facets: [], trips: [] };
+  return { items: [], kits: [], trips: [] };
 }
 
 // --- Loading (JSON → domain) ---
@@ -27,8 +27,8 @@ export function loadStore(raw: unknown): Store {
     items: dedupeEntities(
       Array.isArray(data.items) ? data.items.map(loadItem) : [],
     ),
-    facets: dedupeEntities(
-      Array.isArray(data.facets) ? data.facets.map(loadFacet) : [],
+    kits: dedupeEntities(
+      Array.isArray(data.kits) ? data.kits.map(loadKit) : [],
     ),
     trips: dedupeEntities(
       Array.isArray(data.trips) ? data.trips.map(loadTrip) : [],
@@ -59,10 +59,10 @@ function loadItem(raw: unknown): Item {
   return base;
 }
 
-function loadFacet(raw: unknown): Facet {
+function loadKit(raw: unknown): Kit {
   const data = raw as Record<string, unknown>;
   return {
-    id: facetId(String(data.id ?? "")),
+    id: kitId(String(data.id ?? "")),
     name: String(data.name ?? ""),
     itemIds: dedupe(
       Array.isArray(data.itemIds)
@@ -78,9 +78,9 @@ function loadTrip(raw: unknown): Trip {
     id: tripId(String(data.id ?? "")),
     name: String(data.name ?? ""),
     createdAt: String(data.createdAt ?? ""),
-    facetIds: dedupe(
-      Array.isArray(data.facetIds)
-        ? data.facetIds.map((v: unknown) => facetId(String(v)))
+    kitIds: dedupe(
+      Array.isArray(data.kitIds)
+        ? data.kitIds.map((v: unknown) => kitId(String(v)))
         : [],
     ),
     checked: new Set(
@@ -99,7 +99,7 @@ function loadTrip(raw: unknown): Trip {
 export function storeToJson(store: Store): string {
   const serializable = {
     items: store.items.map(serializeItem),
-    facets: store.facets.map(serializeFacet),
+    kits: store.kits.map(serializeKit),
     trips: store.trips.map(serializeTrip),
   };
   return `${JSON.stringify(serializable, null, 2)}\n`;
@@ -113,11 +113,11 @@ function serializeItem(item: Item): Record<string, unknown> {
   return result;
 }
 
-function serializeFacet(facet: Facet): Record<string, unknown> {
+function serializeKit(kit: Kit): Record<string, unknown> {
   return {
-    id: facet.id,
-    name: facet.name,
-    itemIds: facet.itemIds,
+    id: kit.id,
+    name: kit.name,
+    itemIds: kit.itemIds,
   };
 }
 
@@ -126,21 +126,21 @@ function serializeTrip(trip: Trip): Record<string, unknown> {
     id: trip.id,
     name: trip.name,
     createdAt: trip.createdAt,
-    facetIds: trip.facetIds,
+    kitIds: trip.kitIds,
     checked: [...trip.checked].sort(),
   };
   if (trip.archived !== undefined) result.archived = trip.archived;
   return result;
 }
 
-/** Delete an item everywhere so facets and packing progress cannot retain dangling IDs. */
+/** Delete an item everywhere so kits and packing progress cannot retain dangling IDs. */
 export function deleteStoreItem(store: Store, id: Item["id"]): Store {
   return {
     ...store,
     items: store.items.filter((item) => item.id !== id),
-    facets: store.facets.map((facet) => ({
-      ...facet,
-      itemIds: facet.itemIds.filter((itemId) => itemId !== id),
+    kits: store.kits.map((kit) => ({
+      ...kit,
+      itemIds: kit.itemIds.filter((itemId) => itemId !== id),
     })),
     trips: store.trips.map((trip) => ({
       ...trip,
@@ -149,14 +149,14 @@ export function deleteStoreItem(store: Store, id: Item["id"]): Store {
   };
 }
 
-/** Delete a facet from all trips while retaining the shared item library. */
-export function deleteStoreFacet(store: Store, id: Facet["id"]): Store {
+/** Delete a kit from all trips while retaining the shared item library. */
+export function deleteStoreKit(store: Store, id: Kit["id"]): Store {
   return {
     ...store,
-    facets: store.facets.filter((facet) => facet.id !== id),
+    kits: store.kits.filter((kit) => kit.id !== id),
     trips: store.trips.map((trip) => ({
       ...trip,
-      facetIds: trip.facetIds.filter((facetId) => facetId !== id),
+      kitIds: trip.kitIds.filter((kitId) => kitId !== id),
     })),
   };
 }

@@ -1,21 +1,21 @@
-import { deleteStoreFacet, deleteStoreItem } from "@turbolists/core/store";
+import { deleteStoreKit, deleteStoreItem } from "@turbolists/core/store";
 import { castDraft, produce } from "immer";
 import type { Reducer } from "@zaymonoid/katha";
 import type { AppAction, AppState } from "./state.ts";
 import { dataActionIds } from "./state.ts";
 import { createItem, renameItem } from "@turbolists/core/item";
 import {
-  addItemToFacet,
-  createFacet,
-  removeItemFromFacet,
-  renameFacet,
-} from "@turbolists/core/facet";
+  addItemToKit,
+  createKit,
+  removeItemFromKit,
+  renameKit,
+} from "@turbolists/core/kit";
 import {
-  addFacetToTrip,
+  addKitToTrip,
   createTrip,
   deleteTrip,
   duplicateTrip,
-  removeFacetFromTrip,
+  removeKitFromTrip,
   renameTrip,
   resetChecks,
   setTripArchived,
@@ -42,39 +42,39 @@ const reduceAction: Reducer<AppState, AppAction> = (state, action) => {
         draft.data = castDraft(deleteStoreItem(state.data, action.data.id));
       });
 
-    // Facets
-    case "facet/create":
+    // Kits
+    case "kit/create":
       return produce(state, (draft) => {
-        draft.data.facets = castDraft(
-          createFacet(state.data.facets, action.data.id, action.data.name),
+        draft.data.kits = castDraft(
+          createKit(state.data.kits, action.data.id, action.data.name),
         );
       });
-    case "facet/rename":
+    case "kit/rename":
       return produce(state, (draft) => {
-        draft.data.facets = castDraft(
-          renameFacet(state.data.facets, action.data.id, action.data.name),
+        draft.data.kits = castDraft(
+          renameKit(state.data.kits, action.data.id, action.data.name),
         );
       });
-    case "facet/delete":
+    case "kit/delete":
       return produce(state, (draft) => {
-        draft.data = castDraft(deleteStoreFacet(state.data, action.data.id));
+        draft.data = castDraft(deleteStoreKit(state.data, action.data.id));
       });
-    case "facet/add-item":
+    case "kit/add-item":
       return produce(state, (draft) => {
-        draft.data.facets = castDraft(
-          addItemToFacet(
-            state.data.facets,
-            action.data.facetId,
+        draft.data.kits = castDraft(
+          addItemToKit(
+            state.data.kits,
+            action.data.kitId,
             action.data.itemId,
           ),
         );
       });
-    case "facet/remove-item":
+    case "kit/remove-item":
       return produce(state, (draft) => {
-        draft.data.facets = castDraft(
-          removeItemFromFacet(
-            state.data.facets,
-            action.data.facetId,
+        draft.data.kits = castDraft(
+          removeItemFromKit(
+            state.data.kits,
+            action.data.kitId,
             action.data.itemId,
           ),
         );
@@ -129,23 +129,23 @@ const reduceAction: Reducer<AppState, AppAction> = (state, action) => {
           draft.selectedTripId = null;
         }
       });
-    case "trip/add-facet":
+    case "trip/add-kit":
       return produce(state, (draft) => {
         draft.data.trips = castDraft(
-          addFacetToTrip(
+          addKitToTrip(
             state.data.trips,
             action.data.tripId,
-            action.data.facetId,
+            action.data.kitId,
           ),
         );
       });
-    case "trip/remove-facet":
+    case "trip/remove-kit":
       return produce(state, (draft) => {
         draft.data.trips = castDraft(
-          removeFacetFromTrip(
+          removeKitFromTrip(
             state.data.trips,
             action.data.tripId,
-            action.data.facetId,
+            action.data.kitId,
           ),
         );
       });
@@ -211,9 +211,9 @@ const reduceAction: Reducer<AppState, AppAction> = (state, action) => {
 
 const undoMessages: Partial<Record<AppAction["id"], string>> = {
   "item/delete": "Item deleted",
-  "facet/delete": "Facet deleted",
+  "kit/delete": "Kit deleted",
   "trip/delete": "Trip deleted",
-  "facet/remove-item": "Item removed from facet",
+  "kit/remove-item": "Item removed from kit",
   "trip/reset-checks": "Packing progress reset",
 };
 const mutations = new Set<string>(dataActionIds);
