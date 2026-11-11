@@ -39,7 +39,8 @@ private struct TextPromptModifier: ViewModifier {
                     let value = text.trimmed
                     if !value.isEmpty { p.onSubmit(value) }
                 }
-                .disabled(text.trimmed.isEmpty)
+                // No `.disabled`: alerts don't refresh it as you type, leaving the
+                // filled default button blue-on-blue. Empty submits are ignored.
                 .keyboardShortcut(.defaultAction)
             } message: { p in
                 if let message = p.message { Text(message) }

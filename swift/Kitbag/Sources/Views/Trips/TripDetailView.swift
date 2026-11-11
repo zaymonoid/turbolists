@@ -57,6 +57,15 @@ struct TripDetailView: View {
                     .background(Theme.panel, in: .rect(cornerRadius: Theme.cardRadius))
                     .buttonStyle(CardButtonStyle())
                     .disabled(progress.checked == 0)
+                    // Anchored here so the iOS 26 popover points at the button, not the screen.
+                    .confirmationDialog("Start packing again?", isPresented: $confirmingReset, titleVisibility: .visible) {
+                        Button("Reset", role: .destructive) {
+                            clearReorder()
+                            store.send(.resetChecks(tripId: trip.id))
+                        }
+                    } message: {
+                        Text("All items on this trip will be marked as unpacked.")
+                    }
                     .padding(.top, 6)
                 } else {
                     noItems
@@ -77,14 +86,6 @@ struct TripDetailView: View {
         .onChange(of: complete) { was, now in
             // Celebrate the moment the last item goes in, not on arrival.
             if now && !was { celebrate += 1 }
-        }
-        .confirmationDialog("Start packing again?", isPresented: $confirmingReset, titleVisibility: .visible) {
-            Button("Reset", role: .destructive) {
-                clearReorder()
-                store.send(.resetChecks(tripId: trip.id))
-            }
-        } message: {
-            Text("All items on this trip will be marked as unpacked.")
         }
         .sheet(item: $sheet, onDismiss: {
             if deleteAfterDismiss { store.send(.deleteTrip(id: trip.id)) }

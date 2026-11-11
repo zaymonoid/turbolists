@@ -51,14 +51,14 @@ struct TripsView: View {
             TextField("e.g. Weekend on the coast", text: $draft.capped)
                 .textInputAutocapitalization(.sentences)
             Button("Cancel", role: .cancel) {}
-            Button("Create", action: create).disabled(draft.tripTrimmed.isEmpty)
+            Button("Create", action: create)
         } message: {
             Text("Where are you headed? Give your packing list a name.")
         }
         .alert("Pack again", isPresented: $packingAgain.tripPresented, presenting: packingAgain) { trip in
             TextField("Name", text: $draft.capped)
             Button("Cancel", role: .cancel) {}
-            Button("Create trip") { packAgain(trip) }.disabled(draft.tripTrimmed.isEmpty)
+            Button("Create trip") { packAgain(trip) }
         } message: { _ in
             Text("Reuse these kits with a fresh checklist. The original trip keeps its packing progress.")
         }
@@ -69,7 +69,6 @@ struct TripsView: View {
                 let name = draft.tripTrimmed
                 if !name.isEmpty, name != trip.name { store.send(.renameTrip(id: trip.id, name: name)) }
             }
-            .disabled(draft.tripTrimmed.isEmpty)
         }
         .confirmationDialog(
             deleting.map { "Delete “\($0.name)”?" } ?? "",
