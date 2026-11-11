@@ -96,26 +96,44 @@ export class TripsView extends LitElement {
       .detail-header h1 {
         font-size: 29px;
       }
-      .progress-card {
-        padding: 20px;
+      .nav-actions {
+        display: flex;
+        margin-right: -10px;
+      }
+      .pack-progress {
+        margin: 4px 4px 6px;
+      }
+      .pack-line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
       }
       .counter {
-        font-size: 38px;
+        font-size: 22px;
         font-weight: 700;
-        letter-spacing: -0.04em;
+        letter-spacing: -0.03em;
         color: var(--accent);
         font-variant-numeric: tabular-nums;
       }
       .counter small {
-        font-size: 20px;
-        font-weight: 400;
+        font-size: 15px;
+        font-weight: 500;
         color: var(--ink-dim);
         letter-spacing: 0;
+        margin-left: 2px;
       }
       .progress-note {
-        font-size: 15px;
+        font-size: 14px;
         color: var(--ink-dim);
-        margin-top: 6px;
+        text-align: right;
+      }
+      .pack-progress .progress {
+        height: 4px;
+        margin-top: 8px;
+      }
+      .share-message {
+        margin: 8px 4px 0;
       }
       .kit-summary {
         display: flex;
@@ -744,15 +762,26 @@ export class TripsView extends LitElement {
               })}
           >
             ${icon("back")} Trips</button
-          ><button
-            class="icon-button"
-            aria-label="Trip settings"
-            @click=${() => {
-              this.sheet = "settings";
-            }}
-          >
-            ${icon("edit")}
-          </button>
+          ><span class="nav-actions">${total
+            ? html`
+              <button
+                class="icon-button"
+                aria-label="Share checklist"
+                ?disabled=${this.sharing}
+                @click=${() => this.share(trip)}
+              >
+                              ${icon("share")}
+                            </button>
+            `
+            : null}<button
+              class="icon-button"
+              aria-label="Trip settings"
+              @click=${() => {
+                this.sheet = "settings";
+              }}
+            >
+              ${icon("edit")}
+            </button></span>
         </div>
         <h1>${trip.name}</h1>
         ${this.renderKitSummary(trip)}
@@ -766,47 +795,41 @@ export class TripsView extends LitElement {
               </button>
             </div>`
           : null}
-        <section class="card progress-card" aria-label="Packing progress">
-          <div class="counter" role="group" aria-label=${`${checked} of ${total} packed`}><span aria-hidden="true">${Math
-            .round(this.animatedChecked.value)} <small>/ ${Math.round(
-              this.animatedTotal.value,
-            )} packed</small></span></div>
-          <div class="progress-note" role="status">
-            ${complete
-              ? "All packed. Have a great trip!"
-              : total
-              ? `${total - checked} item${
-                total - checked === 1 ? "" : "s"
-              } left to pack`
-              : "Your adventure, one item at a time."}
-          </div>
-          <div
-            class="progress"
-            role="progressbar"
-            aria-label="Items packed"
-            aria-valuenow=${checked}
-            aria-valuemin="0"
-            aria-valuemax=${total || 1}
-          >
-            <div
-              class="fill"
-              style=${`width:${total ? (checked / total) * 100 : 0}%`}
-            ></div>
-          </div>
-          ${total
-            ? html`
-              <button
-                class="text-button"
-                aria-label="Share checklist"
-                ?disabled=${this.sharing}
-                @click=${() => this.share(trip)}
-              >${icon("share")} Share checklist</button>
-            `
-            : null}
-          ${this.shareMessage
-            ? html`<p class="meta" role="status">${this.shareMessage}</p>`
-            : null}
-        </section>
+        ${total
+          ? html`
+            <section class="pack-progress" aria-label="Packing progress">
+              <div class="pack-line">
+                <span class="counter" role="group" aria-label=${`${checked} of ${total} packed`}
+                ><span aria-hidden="true">${Math.round(
+                  this.animatedChecked.value,
+                )}<small>/${Math.round(this.animatedTotal.value)}</small></span
+                            ></span>
+                <span class="progress-note" role="status">
+                              ${complete
+                                ? "All packed. Have a great trip!"
+                                : `${total - checked} item${
+                                  total - checked === 1 ? "" : "s"
+                                } left to pack`}
+                            </span>
+              </div>
+              <div
+                class="progress"
+                role="progressbar"
+                aria-label="Items packed"
+                aria-valuenow=${checked}
+                aria-valuemin="0"
+                aria-valuemax=${total}
+              >
+                <div class="fill" style=${`width:${
+                  (checked / total) * 100
+                }%`}></div>
+              </div>
+            </section>
+          `
+          : null}
+        ${this.shareMessage
+          ? html`<p class="meta share-message" role="status">${this.shareMessage}</p>`
+          : null}
         ${total
           ? html`<div class="check-toolbar">
                 <h2>Checklist</h2>
