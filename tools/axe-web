@@ -47,7 +47,15 @@ if (revealsTarget && simulator && (label || (x && y))) {
     : raw;
   // For coordinate taps on the dismissal region, keep the safe point selected
   // in the snapshot, rather than recentering the full-screen overlay.
-  const frame = element?.AXUniqueId === "PopoverDismissRegion" && x && y
+  // Native (non-WebView) controls report correct frames already; a point
+  // lookup there can resolve to an enclosing container, so keep the caller's
+  // coordinates instead of recentering on it.
+  const nativeTarget = !label && x && y &&
+    element?.AXUniqueId !== "PopoverDismissRegion" &&
+    !element?.traits?.includes("WebContent");
+  const frame = nativeTarget
+    ? { x: Number(x) - 0.5, y: Number(y) - 0.5, width: 1, height: 1 }
+    : element?.AXUniqueId === "PopoverDismissRegion" && x && y
     ? { x: Number(x) - 0.5, y: Number(y) - 0.5, width: 1, height: 1 }
     : element?.frame;
   if (!frame || frame.width <= 0 || frame.height <= 0) {

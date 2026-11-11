@@ -1,0 +1,15 @@
+{
+  "originHash" : "48aa8044d2e9a71bb7c7a0e32758b7e6972aa42e054ce37c46dd6358072a7f95",
+  "pins" : [
+    {
+      "identity" : "observablestore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/subconsciousnetwork/ObservableStore",
+      "state" : {
+        "revision" : "41f3356de1b7cd289d2e95fdbff0a15b960e0a6b",
+        "version" : "0.6.1"
+      }
+    }
+  ],
+  "version" : 3
+}

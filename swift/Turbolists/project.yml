@@ -1,0 +1,57 @@
+name: Turbolists
+options:
+  bundleIdPrefix: com.turbolists
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  TurbolistsCore:
+    path: ../TurbolistsCore
+  ObservableStore:
+    url: https://github.com/subconsciousnetwork/ObservableStore
+    exactVersion: 0.6.1
+targets:
+  Turbolists:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    dependencies:
+      - package: TurbolistsCore
+        product: TurbolistsCore
+      - package: ObservableStore
+        product: ObservableStore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.turbolists.swiftui
+        PRODUCT_NAME: Turbolists
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Turbolists
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  TurbolistsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Turbolists
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.turbolists.swiftui.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Turbolists:
+    build:
+      targets:
+        Turbolists: all
+    test:
+      targets:
+        - TurbolistsTests

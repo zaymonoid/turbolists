@@ -42,4 +42,16 @@ yarn-error.log*
 .playwright-mcp
 
 # Local simulator automation builds
-.xcodebuildmcp/cache/
+.xcodebuildmcp/cache
+
+# Swift / Xcode
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj
+!packages/app/src-tauri/gen/apple/*.xcodeproj
+xcuserdata/
+*.xcuserstate
+*.xcresult
+*.dSYM/
+*.ipa
