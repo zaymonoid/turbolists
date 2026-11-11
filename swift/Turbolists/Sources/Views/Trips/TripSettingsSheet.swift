@@ -131,9 +131,9 @@ struct TripSettingsSheet: View {
                     .buttonStyle(.plain)
                     .sheetRow()
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(kit.name)
-                    .accessibilityValue("\(kit.itemIds.count) item\(kit.itemIds.count == 1 ? "" : "s")")
-                    .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityLabel("\(kit.name), \(kit.itemIds.count) item\(kit.itemIds.count == 1 ? "" : "s")")
+                    .accessibilityValue(active ? "In this trip" : "Not in this trip")
+                    .accessibilityAddTraits(active ? [.isToggle, .isSelected] : .isToggle)
                 }
             }
         } header: {

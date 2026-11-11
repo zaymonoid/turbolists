@@ -152,10 +152,18 @@ struct KitDetailView: View {
         .swipeActions(edge: .trailing) {
             Button("Remove", systemImage: "minus.circle", role: .destructive, action: remove)
                 .tint(.red)
-                .accessibilityLabel("Remove \(name) from \(kit.name)")
         }
         // No context menu here: long-press belongs to drag-to-reorder.
-        .accessibilityAction(named: "Remove \(name) from \(kit.name)", remove)
+        .accessibilityActions {
+            if let index = kit.itemIds.firstIndex(of: id) {
+                if index > 0 {
+                    Button("Move up") { store.send(.moveItemInKit(kitId: kit.id, itemId: id, toIndex: index - 1)) }
+                }
+                if index < kit.itemIds.count - 1 {
+                    Button("Move down") { store.send(.moveItemInKit(kitId: kit.id, itemId: id, toIndex: index + 1)) }
+                }
+            }
+        }
     }
 
     private func addField(_ kit: Kit) -> some View {

@@ -101,8 +101,17 @@ setup step is needed. The same tools are available from the shell as
   except for visual checks.
 - Use current `elementRef`s; refresh the snapshot after navigation, scrolling or
   sheet changes.
-- Row actions (delete, archive, pack again, remove from kit) are swipe actions and
-  context menus: `long_press` the row, then tap the menu item.
+- Row actions (delete, archive, rename, pack again) are swipe actions and context
+  menus: `long_press` the row, then tap the menu item. Kit item rows have no
+  context menu (long press drags to reorder); remove them by swiping.
+- What AXe sees is not exactly what VoiceOver reads. AXe lists the children of
+  combined and `accessibilityHidden` views, and it does not report traits. Put
+  state that matters (packed, in this trip) in `accessibilityValue`, not only
+  in a trait. Children of List rows inherit the row's swipe actions, so
+  MobileBuildMCP lists their text as extra tap targets; tap the row itself.
+- Each row action should appear once in VoiceOver's Actions: swipe actions
+  already count, so add `.accessibilityAction` only for context-menu-only
+  actions such as Rename.
 - `type_text` rejects newlines; submit with `key_press` (Return = 40).
 - Look at screenshots, in light and dark, before calling visual work done.
 - The simulator may also hold the old app (`com.turbolists.app`) with real data.

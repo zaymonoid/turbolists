@@ -117,10 +117,11 @@ struct ItemsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
-        .accessibilityLabel("Rename \(item.name)")
+        .accessibilityLabel(item.name)
+        .accessibilityHint("Rename")
         .accessibilityValue(kitCount > 0 ? "In \(plural(kitCount, "kit"))" : "Not in a kit yet")
         .swipeActions(edge: .trailing) {
-            Button("Delete \(item.name)", systemImage: "trash", role: .destructive) { pendingDelete = item }
+            Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = item }
                 .tint(.red)
                 .labelStyle(.iconOnly)
         }
@@ -132,7 +133,6 @@ struct ItemsView: View {
             Button("Rename", systemImage: "pencil") { rename(item) }
             Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = item }
         }
-        .accessibilityAction(named: "Delete \(item.name)") { pendingDelete = item }
     }
 
     private func add() {

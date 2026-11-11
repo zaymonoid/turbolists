@@ -91,10 +91,12 @@ struct KitsView: View {
                         Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = kit }
                     }
                     .swipeActions(edge: .trailing) {
-                        Button("Delete \(kit.name)", systemImage: "trash", role: .destructive) { pendingDelete = kit }
+                        Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = kit }
                             .tint(.red)
                             .labelStyle(.iconOnly)
                     }
+                    // Swipe actions already appear as VoiceOver actions; Rename is only in the context menu.
+                    .accessibilityAction(named: "Rename") { rename(kit) }
                 }
             }
             .listStyle(.plain)
@@ -205,12 +207,16 @@ private struct KitCard: View {
                     }
                 }
                 .padding(.top, 14)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(preview.joined(separator: ", "))
             }
         }
         .card(padding: 16)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(kit.name)
+        .accessibilityValue(
+            ([plural(kit.itemIds.count, "item")] + (tripCount > 0 ? ["used in \(plural(tripCount, "trip"))"] : []))
+                .joined(separator: ", ")
+                + (preview.isEmpty ? "" : ". " + preview.joined(separator: ", "))
+        )
     }
 }
 

@@ -180,6 +180,7 @@ struct TripDetailView: View {
                         GroupHeader(
                             title: group.name,
                             count: "\(packed)/\(group.ids.count)",
+                            countLabel: "\(packed) of \(group.ids.count) packed",
                             countTint: packed == group.ids.count ? Theme.moss : Theme.inkDim
                         )
                         .padding(.horizontal, 4)

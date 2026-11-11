@@ -132,6 +132,8 @@ struct CardButtonStyle: ButtonStyle {
 struct GroupHeader: View {
     var title: String
     var count: String? = nil
+    /// Spoken form of `count`, e.g. "4 of 7 packed" for "4/7".
+    var countLabel: String? = nil
     var countTint: Color = Theme.inkDim
 
     var body: some View {
@@ -149,6 +151,9 @@ struct GroupHeader: View {
         }
         .textCase(nil)
         .padding(.horizontal, 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([title, countLabel ?? count].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityAddTraits(.isHeader)
     }
 }
 

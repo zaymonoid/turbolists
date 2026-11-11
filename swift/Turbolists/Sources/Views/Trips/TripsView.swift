@@ -164,10 +164,9 @@ struct TripsView: View {
             TripCard(trip: trip, kits: kits)
         }
         .buttonStyle(CardButtonStyle())
-        .accessibilityLabel("Open \(trip.name)")
+        .accessibilityLabel(trip.name)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button("Delete", systemImage: "trash", role: .destructive) { deleting = trip }
-                .accessibilityLabel("Delete \(trip.name)")
                 .tint(.red)
             archiveButton(trip).tint(Theme.inkFaint)
         }
@@ -182,24 +181,19 @@ struct TripsView: View {
             archiveButton(trip)
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive) { deleting = trip }
-                .accessibilityLabel("Delete \(trip.name)")
         }
-        .accessibilityAction(named: "Pack again") { if !trip.kitIds.isEmpty { startPackAgain(trip) } }
+        // Swipe actions already appear as VoiceOver actions; Rename is only in the context menu.
         .accessibilityAction(named: "Rename") { draft = trip.name; renaming = trip }
-        .accessibilityAction(named: trip.archived == true ? "Restore" : "Archive") { toggleArchived(trip) }
-        .accessibilityAction(named: "Delete") { deleting = trip }
     }
 
     private func packAgainButton(_ trip: Trip) -> some View {
         Button("Pack again", systemImage: "arrow.clockwise") { startPackAgain(trip) }
-            .accessibilityLabel("Pack \(trip.name) again")
     }
 
     private func archiveButton(_ trip: Trip) -> some View {
         let archived = trip.archived ?? false
         return Button(archived ? "Restore" : "Archive",
                       systemImage: archived ? "tray.and.arrow.up" : "archivebox") { toggleArchived(trip) }
-            .accessibilityLabel("\(archived ? "Restore" : "Archive") \(trip.name)")
     }
 
     // MARK: Actions
