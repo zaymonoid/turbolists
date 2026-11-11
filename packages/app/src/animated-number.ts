@@ -24,6 +24,10 @@ export class AnimatedNumber implements ReactiveController {
   }
 
   set target(v: number) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.reset(v);
+      return;
+    }
     if (v === this._target) return;
     this._target = v;
     if (!this._raf) {
@@ -34,6 +38,12 @@ export class AnimatedNumber implements ReactiveController {
 
   get target() {
     return this._target;
+  }
+
+  reset(value: number) {
+    cancelAnimationFrame(this._raf);
+    this._raf = 0;
+    this._target = this.value = value;
   }
 
   private _tick = (now: number) => {

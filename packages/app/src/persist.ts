@@ -4,6 +4,13 @@ export async function readStore(): Promise<string> {
   return invoke<string>("read_store");
 }
 
-export async function writeStore(json: string): Promise<void> {
-  return invoke("write_store", { json });
+// An in-flight invoke cannot be cancelled. Keep writes in order even when a
+// debounced save is interrupted by another edit or a background flush.
+let writes: Promise<void> = Promise.resolve();
+export function writeStore(json: string): Promise<void> {
+  const next = writes.catch(() => {}).then(() =>
+    invoke<void>("write_store", { json })
+  );
+  writes = next;
+  return next;
 }

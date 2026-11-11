@@ -15,7 +15,8 @@
       {
         "title": "Turbolists",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "backgroundColor": "#10120f"
       }
     ],
     "security": {

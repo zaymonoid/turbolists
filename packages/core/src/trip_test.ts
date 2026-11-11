@@ -4,9 +4,11 @@ import {
   addFacetToTrip,
   createTrip,
   deleteTrip,
+  duplicateTrip,
   removeFacetFromTrip,
   renameTrip,
   resetChecks,
+  setTripArchived,
   toggleChecked,
   type Trip,
 } from "./trip.ts";
@@ -183,7 +185,10 @@ Deno.test("resetChecks - throws on nonexistent trip", () => {
 });
 
 Deno.test("deleteTrip - removes trip", () => {
-  assertEquals(deleteTrip(createTrip([], t1, "Sq", "2025-07-15"), t1).length, 0);
+  assertEquals(
+    deleteTrip(createTrip([], t1, "Sq", "2025-07-15"), t1).length,
+    0,
+  );
 });
 
 Deno.test("deleteTrip - preserves other trips", () => {
@@ -244,4 +249,52 @@ Deno.test("property: add then remove facet is identity on facetIds", () => {
       },
     ),
   );
+});
+
+Deno.test("duplicateTrip reuses facets with fresh progress and leaves the original intact", () => {
+  const source = toggleChecked(
+    addFacetToTrip(createTrip([], t1, "Coast", "2026-01-01"), t1, f1),
+    t1,
+    i1,
+  );
+  const result = duplicateTrip(source, t1, t2, "Coast again", "2026-11-10");
+  assertEquals(result[0], source[0]);
+  assertEquals(result[1], {
+    id: t2,
+    name: "Coast again",
+    createdAt: "2026-11-10",
+    facetIds: [f1],
+    checked: new Set<ItemId>(),
+  });
+  const changed = toggleChecked(removeFacetFromTrip(result, t2, f1), t2, i2);
+  assertEquals(changed[0].facetIds, [f1]);
+  assertEquals(changed[0].checked, new Set([i1]));
+});
+
+Deno.test("duplicateTrip rejects missing sources, duplicate IDs and empty names", () => {
+  const source = createTrip([], t1, "Coast", "2026-01-01");
+  assertThrows(() =>
+    duplicateTrip(source, t2, tripId("t3"), "Copy", "2026-11-10")
+  );
+  assertThrows(() => duplicateTrip(source, t1, t1, "Copy", "2026-11-10"));
+  assertThrows(() => duplicateTrip(source, t1, t2, "   ", "2026-11-10"));
+});
+
+Deno.test("archiving preserves packing progress, can be restored, and copies start active", () => {
+  const original = toggleChecked(
+    addFacetToTrip(createTrip([], t1, "Coast", "2026-11-10"), t1, f1),
+    t1,
+    i1,
+  );
+  const archived = setTripArchived(original, t1, true);
+  assertEquals(archived[0].archived, true);
+  assertEquals(archived[0].checked, original[0].checked);
+  assertEquals(archived[0].facetIds, original[0].facetIds);
+  assertEquals(original[0].archived, undefined);
+  assertEquals(setTripArchived(archived, t1, false)[0].archived, false);
+  assertEquals(
+    duplicateTrip(archived, t1, t2, "Again", "2026-11-11")[1].archived,
+    undefined,
+  );
+  assertThrows(() => setTripArchived(original, t2, true));
 });

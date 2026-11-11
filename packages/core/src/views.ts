@@ -42,6 +42,30 @@ export function packProgress(
   return { checked, total: checklist.size };
 }
 
+/** A portable checklist, independent of the current search or unpacked filter. */
+export function formatTripChecklist(
+  trip: Trip,
+  facets: readonly Facet[],
+  items: readonly Item[],
+): string {
+  const itemMap = new Map(items.map((item) => [item.id, item]));
+  const checklist = tripChecklist(trip, facets).flatMap((id) => {
+    const item = itemMap.get(id);
+    return item ? [item] : [];
+  });
+  const checked = checklist.filter((item) => trip.checked.has(item.id)).length;
+  const lines = checklist.map((item) => {
+    const name = item.name.replace(/\s+/g, " ").trim();
+    const notes = item.notes?.trim().split(/\r?\n/).map((line) => `    ${line}`)
+      .join("\n");
+    return `- [${trip.checked.has(item.id) ? "x" : " "}] ${name}${
+      notes ? `\n${notes}` : ""
+    }`;
+  });
+  return [trip.name, `${checked} of ${checklist.length} packed`, "", ...lines]
+    .join("\n").trimEnd();
+}
+
 export function facetUsage(
   facets: readonly Facet[],
   trips: readonly Trip[],

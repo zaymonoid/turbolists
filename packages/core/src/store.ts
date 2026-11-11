@@ -74,7 +74,7 @@ function loadFacet(raw: unknown): Facet {
 
 function loadTrip(raw: unknown): Trip {
   const data = raw as Record<string, unknown>;
-  return {
+  const trip: Trip = {
     id: tripId(String(data.id ?? "")),
     name: String(data.name ?? ""),
     createdAt: String(data.createdAt ?? ""),
@@ -89,6 +89,9 @@ function loadTrip(raw: unknown): Trip {
         : [],
     ),
   };
+  return typeof data.archived === "boolean"
+    ? { ...trip, archived: data.archived }
+    : trip;
 }
 
 // --- Saving (domain → JSON) ---
@@ -119,11 +122,41 @@ function serializeFacet(facet: Facet): Record<string, unknown> {
 }
 
 function serializeTrip(trip: Trip): Record<string, unknown> {
-  return {
+  const result: Record<string, unknown> = {
     id: trip.id,
     name: trip.name,
     createdAt: trip.createdAt,
     facetIds: trip.facetIds,
     checked: [...trip.checked].sort(),
+  };
+  if (trip.archived !== undefined) result.archived = trip.archived;
+  return result;
+}
+
+/** Delete an item everywhere so facets and packing progress cannot retain dangling IDs. */
+export function deleteStoreItem(store: Store, id: Item["id"]): Store {
+  return {
+    ...store,
+    items: store.items.filter((item) => item.id !== id),
+    facets: store.facets.map((facet) => ({
+      ...facet,
+      itemIds: facet.itemIds.filter((itemId) => itemId !== id),
+    })),
+    trips: store.trips.map((trip) => ({
+      ...trip,
+      checked: new Set([...trip.checked].filter((itemId) => itemId !== id)),
+    })),
+  };
+}
+
+/** Delete a facet from all trips while retaining the shared item library. */
+export function deleteStoreFacet(store: Store, id: Facet["id"]): Store {
+  return {
+    ...store,
+    facets: store.facets.filter((facet) => facet.id !== id),
+    trips: store.trips.map((trip) => ({
+      ...trip,
+      facetIds: trip.facetIds.filter((facetId) => facetId !== id),
+    })),
   };
 }

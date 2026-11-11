@@ -1,12 +1,15 @@
 import { Effect, ManagedRuntime } from "effect";
 import { createStoreRef, makeStore } from "@zaymonoid/katha";
 import { emptyStore } from "@turbolists/core/store";
-import type { AppState, AppAction } from "./state.ts";
+import type { AppAction, AppState } from "./state.ts";
 import { appReducer } from "./reducer.ts";
 import { rootProcess } from "./process.ts";
 
 const initialState: AppState = {
   data: emptyStore(),
+  undo: null,
+  loadStatus: "loading",
+  persistence: "saved",
   view: "trips",
   selectedTripId: null,
 };
@@ -27,4 +30,4 @@ const appRuntime = ManagedRuntime.make(AppStore.Default);
 appRuntime.runPromise(AppStore).then(attach);
 
 export { store };
-export type { AppState, AppAction };
+export type { AppAction, AppState };

@@ -40,3 +40,6 @@ yarn-error.log*
 .turbo/
 
 .playwright-mcp
+
+# Local simulator automation builds
+.xcodebuildmcp/cache/

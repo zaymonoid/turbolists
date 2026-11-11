@@ -1,32 +1,116 @@
 :root {
-  --bg: #0e0f0c;
-  --panel: #161814;
-  --panel-2: #1d201b;
-  --line: #2a2e26;
-  --line-bright: #3a3f35;
-  --ink: #e8e6df;
-  --ink-dim: #8a8c82;
-  --ink-faint: #555852;
+  color-scheme: dark;
+  --bg: #10120f;
+  --panel: #1a1d18;
+  --panel-2: #242820;
+  --line: #30362b;
+  --ink: #f1f3eb;
+  --ink-dim: #a5af9c;
+  --ink-faint: #8c9783;
   --accent: #d4ff3a;
   --accent-dim: #7a8f1f;
-  --warn: #ff7a3a;
-  --rust: #c44a1f;
-
-  --font-display: 'Archivo', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
+  --warn: #ff8a78;
+  --font-display: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-family: var(--font-display);
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-display);
-  font-feature-settings: "ss01", "ss02";
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+button,
+input {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.app-dialog {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 26px 26px 0 0;
+  padding: 10px 22px calc(28px + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 540px;
+  max-height: 90dvh;
+  margin: auto auto 0;
+  box-shadow: 0 -20px 80px #0006;
+}
+.app-dialog::backdrop {
+  background: #0009;
+  backdrop-filter: blur(5px);
+}
+.sheet-handle {
+  width: 34px;
+  height: 5px;
+  border-radius: 5px;
+  margin: 0 auto 8px;
+  background: #626b5b;
+}
+.sheet-nav {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 -8px;
+}
+.sheet-nav button {
+  color: var(--accent);
+  background: none;
+  border: 0;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.sheet-nav .destructive {
+  color: var(--warn);
+}
+.app-dialog h2 {
+  margin: 16px 0 12px;
+  font-size: 27px;
+  letter-spacing: -.03em;
+  overflow-wrap: anywhere;
+}
+.app-dialog p {
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+.app-dialog label {
+  display: block;
+  color: var(--ink-dim);
+  font-size: 14px;
+  margin: 24px 0 8px;
+}
+.app-dialog input {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 12px 14px;
+  font-size: 17px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.app-dialog input:focus {
+  outline: 2px solid var(--accent-dim);
+}
+@media (min-width: 650px) {
+  .app-dialog {
+    top: 0;
+    margin: auto;
+    border-radius: 26px;
+  }
 }

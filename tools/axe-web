@@ -1,0 +1,200 @@
+#!/usr/bin/env -S deno run --quiet --no-config --allow-run --allow-read --allow-env
+/** AXe adapter: native HID actions, with cross-process WebView accessibility snapshots. */
+import { findNativeAxe } from "./axe-path.ts";
+
+const args = [...Deno.args];
+const native = new URL(
+  "../.xcodebuildmcp/cache/axe-web-native",
+  import.meta.url,
+);
+const simulator = args[args.indexOf("--udid") + 1];
+const valueAfter = (name: string) =>
+  args.includes(name) ? args[args.indexOf(name) + 1] : undefined;
+const label = valueAfter("--label");
+const x = valueAfter("-x") ?? valueAfter("--x");
+const y = valueAfter("-y") ?? valueAfter("--y");
+const revealsTarget = args[0] === "tap" ||
+  (args[0] === "touch" && args.includes("--down") && args.includes("--up"));
+if (revealsTarget && simulator && (label || (x && y))) {
+  const targetArgs = label === "dismiss popup"
+    ? [simulator]
+    : label
+    ? [simulator, "label", label, valueAfter("--element-type") ?? ""]
+    : [simulator, x!, y!];
+  const target = await new Deno.Command(native, {
+    args: targetArgs,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  if (!target.success) {
+    console.error(new TextDecoder().decode(target.stderr));
+    Deno.exit(target.code);
+  }
+  const raw = JSON.parse(new TextDecoder().decode(target.stdout));
+  (Array.isArray(raw) ? raw : [raw]).forEach(normalize);
+  const flatten = (
+    node: Record<string, unknown>,
+  ): Record<string, unknown>[] => [
+    node,
+    ...(Array.isArray(node.children) ? node.children.flatMap(flatten) : []),
+  ];
+  const element = label === "dismiss popup"
+    ? (Array.isArray(raw) ? raw : [raw]).flatMap(flatten).find((node) =>
+      node.AXUniqueId === "PopoverDismissRegion"
+    )
+    : Array.isArray(raw)
+    ? raw[0]
+    : raw;
+  // For coordinate taps on the dismissal region, keep the safe point selected
+  // in the snapshot, rather than recentering the full-screen overlay.
+  const frame = element?.AXUniqueId === "PopoverDismissRegion" && x && y
+    ? { x: Number(x) - 0.5, y: Number(y) - 0.5, width: 1, height: 1 }
+    : element?.frame;
+  if (!frame || frame.width <= 0 || frame.height <= 0) {
+    throw new Error("Target has no visible frame after scrolling");
+  }
+  // Keep delays and simulator options; replace semantic or stale coordinates
+  // with the target's actual position after WebKit scrolls it into view.
+  for (const flag of ["--label", "--element-type", "-x", "--x", "-y", "--y"]) {
+    const index = args.indexOf(flag);
+    if (index >= 0) args.splice(index, 2);
+  }
+  args.push(
+    "-x",
+    String(frame.x + frame.width / 2),
+    "-y",
+    String(frame.y + frame.height / 2),
+  );
+}
+if (args[0] !== "describe-ui" || args.includes("--point")) {
+  const command = new Deno.Command(await findNativeAxe(), {
+    args,
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  Deno.exit((await command.spawn().status).code);
+}
+if (!args.includes("--udid") || !simulator) {
+  throw new Error("--udid is required");
+}
+try {
+  await Deno.stat(native);
+} catch {
+  throw new Error(
+    "WebView snapshot helper is missing. Run deno task setup:ios-testing.",
+  );
+}
+const result = await new Deno.Command(native, {
+  args: [simulator],
+  stdout: "piped",
+  stderr: "piped",
+}).output();
+if (!result.success) {
+  console.error(new TextDecoder().decode(result.stderr));
+  Deno.exit(result.code);
+}
+const tree = JSON.parse(new TextDecoder().decode(result.stdout));
+// rs/1 has a text role but no heading/link roles. Preserve their accessible
+// names so wait_for_ui can assert headings and agents can activate links.
+function normalize(node: Record<string, unknown>) {
+  if (Array.isArray(node.children)) {
+    const dismiss = node.children.find((child) =>
+      child.AXUniqueId === "PopoverDismissRegion"
+    );
+    const sheet = dismiss &&
+      node.children.find((child) =>
+        child !== dismiss && child.frame?.width > 0 && child.frame?.height > 0
+      );
+    if (dismiss && sheet) {
+      const outer = dismiss.frame;
+      const inner = sheet.frame;
+      // Restrict the dismissal target to an uncovered strip around the popup.
+      // Its original accessibility bounds cover the entire screen.
+      const strips = [
+        {
+          x: outer.x,
+          y: outer.y,
+          width: outer.width,
+          height: inner.y - outer.y,
+        },
+        {
+          x: outer.x,
+          y: inner.y + inner.height,
+          width: outer.width,
+          height: outer.y + outer.height - inner.y - inner.height,
+        },
+        {
+          x: outer.x,
+          y: outer.y,
+          width: inner.x - outer.x,
+          height: outer.height,
+        },
+        {
+          x: inner.x + inner.width,
+          y: outer.y,
+          width: outer.x + outer.width - inner.x - inner.width,
+          height: outer.height,
+        },
+      ].filter((rect) => rect.width > 0 && rect.height > 0).sort((a, b) =>
+        b.width * b.height - a.width * a.height
+      );
+      if (strips[0]) {
+        dismiss.frame = strips[0];
+        dismiss.role = "AXButton";
+        dismiss.type = "Button";
+      }
+    }
+  }
+  if (node.role === "AXHeading") {
+    node.role = "AXStaticText";
+    node.type = "StaticText";
+  }
+  if (node.role === "AXLink") {
+    node.role = "AXButton";
+    node.type = "Button";
+  }
+  if (Array.isArray(node.children)) node.children.forEach(normalize);
+}
+(Array.isArray(tree) ? tree : [tree]).forEach(normalize);
+// WebKit sometimes reports body controls underneath the fixed navigation and
+// recovery bars. Exclude those targets so MCP asks the agent to scroll first;
+// a point lookup there would resolve to the covering tab instead.
+function flattenTree(nodes: Record<string, any>[]): Record<string, any>[] {
+  return nodes.flatMap((node) => [node, ...flattenTree(node.children ?? [])]);
+}
+const roots = Array.isArray(tree) ? tree : [tree];
+const nodes = flattenTree(roots);
+const tabs = ["Trips", "Facets", "Items"].map((name) =>
+  nodes.filter((node) => node.type === "Button" && node.AXLabel === name)
+    .sort((a, b) => b.frame.y - a.frame.y)[0]
+);
+if (
+  tabs.every(Boolean) &&
+  tabs.every((tab) => Math.abs(tab.frame.y - tabs[0].frame.y) < 2)
+) {
+  const dismissUndo = nodes.find((node) =>
+    node.type === "Button" && node.AXLabel === "Dismiss undo"
+  );
+  const undo = dismissUndo &&
+    nodes.find((node) =>
+      node.type === "Button" && node.AXLabel === "Undo" &&
+      Math.abs(node.frame.y - dismissUndo.frame.y) < 2
+    );
+  const recovery = undo && dismissUndo ? [undo, dismissUndo] : [];
+  const fixed = new Set([...tabs, ...recovery]);
+  const bottom = Math.min(...[...fixed].map((node) => node.frame.y));
+  function clip(nodes: Record<string, any>[]): Record<string, any>[] {
+    return nodes.filter((node) =>
+      fixed.has(node) ||
+      !node.traits?.includes("WebContent") ||
+      node.frame.y + node.frame.height <= bottom
+    ).map((node) => {
+      if (node.children) node.children = clip(node.children);
+      return node;
+    });
+  }
+  console.log(JSON.stringify(clip(roots)));
+} else {
+  console.log(JSON.stringify(tree));
+}

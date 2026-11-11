@@ -1,6 +1,13 @@
 import { assertEquals } from "@std/assert";
 import * as fc from "fast-check";
-import { emptyStore, loadStore, type Store, storeToJson } from "./store.ts";
+import {
+  deleteStoreFacet,
+  deleteStoreItem,
+  emptyStore,
+  loadStore,
+  type Store,
+  storeToJson,
+} from "./store.ts";
 import { facetId, itemId, tripId } from "./ids.ts";
 import type { FacetId, ItemId, TripId } from "./ids.ts";
 import type { Item } from "./item.ts";
@@ -66,7 +73,11 @@ Deno.test("storeToJson - serializes items with notes", () => {
 });
 
 Deno.test("storeToJson - omits notes when undefined", () => {
-  const store: Store = { items: [makeItem(i1, "Headlamp")], facets: [], trips: [] };
+  const store: Store = {
+    items: [makeItem(i1, "Headlamp")],
+    facets: [],
+    trips: [],
+  };
   assertEquals(
     JSON.parse(storeToJson(store)).items[0].hasOwnProperty("notes"),
     false,
@@ -303,3 +314,55 @@ function assertStoreEqual(actual: Store, expected: Store): void {
     assertEquals(actual.trips[i].checked, expected.trips[i].checked);
   }
 }
+
+Deno.test("deleteStoreItem removes references across facets and packing progress", () => {
+  const original: Store = {
+    items: [makeItem(i1, "Charger"), makeItem(i2, "Sunscreen")],
+    facets: [
+      makeFacet(f1, "Essentials", [i1]),
+      makeFacet(f2, "Beach", [i1, i2]),
+    ],
+    trips: [makeTrip(t1, "Coast", "2026-11-10", [f1, f2], [i1, i2])],
+  };
+  const result = deleteStoreItem(original, i1);
+  assertEquals(result.items.map((i) => i.id), [i2]);
+  assertEquals(result.facets.map((f) => f.itemIds), [[], [i2]]);
+  assertEquals([...result.trips[0].checked], [i2]);
+  assertEquals(original.facets[0].itemIds, [i1]);
+  assertEquals([...original.trips[0].checked], [i1, i2]);
+});
+
+Deno.test("deleteStoreFacet updates every trip without deleting library items", () => {
+  const original: Store = {
+    items: [makeItem(i1, "Charger")],
+    facets: [makeFacet(f1, "Essentials", [i1]), makeFacet(f2, "Beach", [i1])],
+    trips: [makeTrip(t1, "Coast", "2026-11-10", [f1, f2], [i1])],
+  };
+  const result = deleteStoreFacet(original, f1);
+  assertEquals(result.facets.map((f) => f.id), [f2]);
+  assertEquals(result.trips[0].facetIds, [f2]);
+  assertEquals(result.items, original.items);
+  assertEquals([...result.trips[0].checked], [i1]);
+  assertEquals(original.trips[0].facetIds, [f1, f2]);
+});
+
+Deno.test("archive status round trips while legacy trips remain active", () => {
+  const data = {
+    items: [],
+    facets: [],
+    trips: [{ id: "t1", name: "Old", createdAt: "2026-11-10", archived: true }],
+  };
+  assertEquals(
+    loadStore(JSON.parse(storeToJson(loadStore(data)))).trips[0].archived,
+    true,
+  );
+  assertEquals(
+    loadStore({ trips: [{ id: "t1", name: "Legacy" }] }).trips[0].archived,
+    undefined,
+  );
+  assertEquals(
+    loadStore({ trips: [{ id: "t1", name: "Bad flag", archived: "false" }] })
+      .trips[0].archived,
+    undefined,
+  );
+});

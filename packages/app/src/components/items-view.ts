@@ -1,189 +1,147 @@
-import { LitElement, html, css } from "lit";
-import { customElement } from "lit/decorators.js";
+import { repeat } from "lit/directives/repeat.js";
+import { listMotion } from "./list-motion.ts";
+import { html, LitElement } from "lit";
+import { customElement, state } from "lit/decorators.js";
 import { fromStore } from "@zaymonoid/katha/lit";
 import { store } from "../store/index.ts";
 import type { AppState } from "../store/state.ts";
 import { newItemId } from "../ids.ts";
 import type { Item } from "@turbolists/core/item";
 import { itemUsage } from "@turbolists/core/views";
+import { icon, showDialog, viewStyles } from "./ui.ts";
 
 @customElement("items-view")
 export class ItemsView extends LitElement {
-  static styles = css`
-    :host {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      position: relative;
-    }
-
-    /* ---- Screen header ---- */
-    .screen-header {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--line, #2a2e26);
-    }
-    .screen-title {
-      font-family: var(--font-display, 'Archivo', sans-serif);
-      font-weight: 900;
-      font-size: 28px;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-    .screen-sub {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 10px;
-      color: var(--ink-dim, #8a8c82);
-      letter-spacing: 0.05em;
-    }
-
-    /* ---- Screen body ---- */
-    .screen-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px 0 80px;
-    }
-
-    /* ---- Add form ---- */
-    .add-form {
-      margin: 0 16px 12px;
-      display: flex;
-      gap: 8px;
-    }
-    .add-form input {
-      flex: 1;
-      padding: 10px 14px;
-      background: var(--panel, #161814);
-      border: 1px solid var(--line, #2a2e26);
-      border-radius: 4px;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 12px;
-      color: var(--ink, #e8e6df);
-      outline: none;
-    }
-    .add-form input::placeholder { color: var(--ink-faint, #555852); }
-    .add-form input:focus { border-color: var(--accent, #d4ff3a); }
-    .add-form button {
-      padding: 10px 16px;
-      background: var(--accent, #d4ff3a);
-      color: var(--bg, #0e0f0c);
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    /* ---- Item rows ---- */
-    .item-row {
-      margin: 0 16px 8px;
-      padding: 12px 16px;
-      background: var(--panel, #161814);
-      border: 1px solid var(--line, #2a2e26);
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .item-name {
-      font-family: var(--font-display, 'Archivo', sans-serif);
-      font-weight: 500;
-      font-size: 14px;
-      flex: 1;
-    }
-    .item-badge {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 9px;
-      color: var(--accent, #d4ff3a);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .item-badge.unused {
-      color: var(--ink-faint, #555852);
-    }
-    .delete-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--ink-faint, #555852);
-      font-size: 16px;
-      padding: 4px 8px;
-      font-family: var(--font-display);
-    }
-    .delete-btn:hover { color: var(--warn, #ff7a3a); }
-    .delete-btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-    .delete-btn:disabled:hover { color: var(--ink-faint, #555852); }
-
-    .empty {
-      color: var(--ink-faint, #555852);
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 11px;
-      text-align: center;
-      padding: 40px 20px;
-    }
-  `;
-
+  static styles = viewStyles;
   private items = fromStore(this, store, (s: AppState) => s.data.items);
-  private usage = fromStore(this, store, (s: AppState) =>
-    itemUsage(s.data.items, s.data.facets),
+  private usage = fromStore(
+    this,
+    store,
+    (s: AppState) => itemUsage(s.data.items, s.data.facets),
   );
+  @state()
+  private query = "";
 
-  private handleAdd(e: SubmitEvent) {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const input = form.querySelector("input") as HTMLInputElement;
-    const name = input.value.trim();
+  private async add() {
+    const name = await showDialog({
+      title: "New item",
+      value: this.query.trim(),
+      placeholder: "e.g. Phone charger",
+      confirm: "Add",
+    });
     if (!name) return;
-    store.put({ id: "item/create", data: { id: newItemId(), name } });
-    input.value = "";
-    input.focus();
+    const id = newItemId();
+    this.query = "";
+    store.put({ id: "item/create", data: { id, name } });
+    await this.updateComplete;
+    this.renderRoot
+      .querySelector(`[data-item-id="${id}"]`)
+      ?.scrollIntoView({ block: "nearest" });
   }
-
-  private handleDelete(item: Item) {
-    store.put({ id: "item/delete", data: { id: item.id } });
+  private async rename(item: Item) {
+    const name = await showDialog({ title: "Rename item", value: item.name });
+    if (name) store.put({ id: "item/rename", data: { id: item.id, name } });
   }
-
+  private async handleDelete(item: Item) {
+    const count = this.usage.value.get(item.id)?.size ?? 0;
+    const confirmed = await showDialog({
+      title: `Delete “${item.name}”?`,
+      message: count
+        ? `This also removes it from ${count} facet${
+          count === 1 ? "" : "s"
+        } and all packing checklists.`
+        : "This item will be removed from your library.",
+      confirm: "Delete",
+      destructive: true,
+    });
+    if (confirmed) store.put({ id: "item/delete", data: { id: item.id } });
+  }
   render() {
     const items = this.items.value;
-    const usage = this.usage.value;
-
+    const filtered = items.filter((item) =>
+      item.name
+        .toLocaleLowerCase()
+        .includes(this.query.trim().toLocaleLowerCase())
+    );
     return html`
-      <div class="screen-header">
-        <div class="screen-title">Items</div>
-        <div class="screen-sub">The atomic units</div>
-      </div>
-      <div class="screen-body">
-        <form class="add-form" @submit=${this.handleAdd}>
-          <input type="text" placeholder="New item name..." />
-          <button type="submit">Add</button>
-        </form>
-
-        ${items.length === 0
-          ? html`<p class="empty">No items yet. Add one above.</p>`
-          : items.map((item) => {
-              const refs = usage.get(item.id);
-              const refCount = refs ? refs.size : 0;
-              return html`
-                <div class="item-row">
-                  <span class="item-name">${item.name}</span>
-                  <span class="item-badge ${refCount === 0 ? "unused" : ""}">
-                    ${refCount} FACET${refCount !== 1 ? "S" : ""}
-                  </span>
-                  <button
-                    class="delete-btn"
-                    title=${refCount > 0 ? "Remove from facets first" : "Delete"}
-                    ?disabled=${refCount > 0}
-                    @click=${() => this.handleDelete(item)}
-                  >&times;</button>
-                </div>
-              `;
-            })}
+      <header class="header">
+        <div>
+          <h1>Items</h1>
+          <p class="subtitle">Your library of things to bring.</p>
+        </div>
+        <button class="add-button" aria-label="New item" @click=${this.add}>
+          ${icon("plus")}
+        </button>
+      </header>
+      <div class="body">
+        ${items.length
+          ? html`
+            <label class="search"
+            >${icon("search")}<input
+                type="search"
+                placeholder="Search items"
+                aria-label="Search items"
+                .value=${this.query}
+                @input=${(e: Event) => {
+                  this.query = (e.target as HTMLInputElement).value;
+                }}
+            /></label>
+          `
+          : null}
+        ${!items.length
+          ? html`
+            <div class="empty">
+              <div class="empty-icon">${icon("items")}</div>
+              <h2>A place for everything</h2>
+              <p>
+                Add the things you pack. Reuse them across facets and trips
+                without making duplicate lists.
+              </p>
+              <button class="primary" @click=${this.add}>
+                ${icon("plus")} Add your first item
+              </button>
+            </div>
+          `
+          : !filtered.length
+          ? html`
+            <div class="empty">
+              <h2>No matches</h2>
+              <p>Try another name, or add a new item.</p>
+              <button class="primary" @click=${this.add}>Add item</button>
+            </div>
+          `
+          : html`
+            <p class="section-label">
+              ${filtered.length} item${filtered.length === 1 ? "" : "s"}
+            </p>
+            <div class="card">
+              ${repeat(filtered, (item) => item.id, (item) => {
+                const count = this.usage.value.get(item.id)?.size ?? 0;
+                return html`
+                  <div class="row" data-item-id=${item.id} ${listMotion()}>
+                    <button
+                      class="row-label"
+                      aria-label=${`Rename ${item.name}`}
+                      @click=${() => this.rename(item)}
+                    >
+                      <span class="name">${item.name}</span
+                      ><span class="meta"
+                        >${count
+                          ? `In ${count} facet${count === 1 ? "" : "s"}`
+                          : "Not in a facet yet"}</span
+                      ></button
+                    ><button
+                      class="icon-button danger"
+                      aria-label=${`Delete ${item.name}`}
+                      @click=${() => this.handleDelete(item)}
+                    >
+                      ${icon("trash")}
+                    </button>
+                  </div>
+                `;
+              })}
+            </div>
+          `}
       </div>
     `;
   }

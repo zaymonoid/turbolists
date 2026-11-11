@@ -1,6 +1,11 @@
 import { assertEquals } from "@std/assert";
 import * as fc from "fast-check";
-import { itemUsage, packProgress, tripChecklist } from "./views.ts";
+import {
+  formatTripChecklist,
+  itemUsage,
+  packProgress,
+  tripChecklist,
+} from "./views.ts";
 import { facetId, itemId, tripId } from "./ids.ts";
 import type { Facet } from "./facet.ts";
 import type { Trip } from "./trip.ts";
@@ -195,4 +200,30 @@ Deno.test("property: itemUsage covers every item in every facet", () => {
       assertEquals(usage.get(iId)!.has(facet.id), true);
     }
   }
+});
+
+Deno.test("formatTripChecklist preserves progress and first occurrence order across shared facets", () => {
+  const trip = makeTrip([f1, f2], [i1, i4, i5]);
+  assertEquals(
+    formatTripChecklist(trip, facets, [
+      { id: i1, name: "Headlamp" },
+      { id: i2, name: "Jacket" },
+      { id: i3, name: "Water" },
+      { id: i4, name: "Stove" },
+    ]),
+    "Test\n2 of 4 packed\n\n- [x] Headlamp\n- [ ] Jacket\n- [ ] Water\n- [x] Stove",
+  );
+});
+
+Deno.test("formatTripChecklist skips missing references and indents notes", () => {
+  assertEquals(
+    formatTripChecklist(makeTrip([f1, f2, f3], [i1, i2]), facets, [
+      { id: i1, name: "Warm\n jacket", notes: "Waterproof\nCheck pockets" },
+    ]),
+    "Test\n1 of 1 packed\n\n- [x] Warm jacket\n    Waterproof\n    Check pockets",
+  );
+  assertEquals(
+    formatTripChecklist(makeTrip([]), facets, []),
+    "Test\n0 of 0 packed",
+  );
 });

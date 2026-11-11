@@ -1,0 +1,8 @@
+schemaVersion: 1
+axePath: ./tools/axe-web
+sessionDefaults:
+  projectPath: ./packages/app/src-tauri/gen/apple/app.xcodeproj
+  scheme: app_iOS
+  configuration: Debug
+  simulatorName: iPhone 17 Pro
+  bundleId: com.turbolists.app

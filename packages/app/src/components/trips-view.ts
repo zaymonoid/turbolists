@@ -1,624 +1,869 @@
-import { LitElement, html, css, nothing } from "lit";
-import { customElement } from "lit/decorators.js";
-import { animate } from "@lit-labs/motion";
+import { AnimatedNumber } from "../animated-number.ts";
+import { repeat } from "lit/directives/repeat.js";
+import { listMotion } from "./list-motion.ts";
+import { css, html, LitElement } from "lit";
+import { customElement, state } from "lit/decorators.js";
 import { fromStore } from "@zaymonoid/katha/lit";
 import { store } from "../store/index.ts";
 import type { AppState } from "../store/state.ts";
 import { newTripId } from "../ids.ts";
 import type { Trip } from "@turbolists/core/trip";
-import { packProgress } from "@turbolists/core/views";
-import { facetId, type FacetId, type ItemId } from "@turbolists/core/ids";
-import { AnimatedNumber } from "../animated-number.ts";
+import {
+  formatTripChecklist,
+  packProgress,
+  tripChecklist,
+} from "@turbolists/core/views";
+import type { ItemId } from "@turbolists/core/ids";
+import { icon, navigate, showDialog, viewStyles } from "./ui.ts";
+import { shareChecklist } from "../share.ts";
 
 @customElement("trips-view")
 export class TripsView extends LitElement {
-  static styles = css`
-    :host {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      position: relative;
-    }
-
-    /* ---- Screen header ---- */
-    .screen-header {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--line, #2a2e26);
-    }
-    .screen-title {
-      font-family: var(--font-display, 'Archivo', sans-serif);
-      font-weight: 900;
-      font-size: 28px;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-    .screen-sub {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 10px;
-      color: var(--ink-dim, #8a8c82);
-      letter-spacing: 0.05em;
-    }
-
-    /* ---- Trip cards ---- */
-    .screen-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px 0 80px;
-    }
-
-    .trip-card {
-      margin: 0 16px 12px;
-      padding: 16px;
-      background: var(--panel, #161814);
-      border: 1px solid var(--line, #2a2e26);
-      border-radius: 4px;
-      position: relative;
-      cursor: pointer;
-    }
-
-    .trip-meta-line {
-      display: flex;
-      justify-content: space-between;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 9px;
-      color: var(--ink-dim, #8a8c82);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 8px;
-    }
-
-    .trip-name {
-      font-family: var(--font-display, 'Archivo', sans-serif);
-      font-weight: 700;
-      font-size: 18px;
-      letter-spacing: -0.01em;
-      margin-bottom: 10px;
-      line-height: 1.1;
-    }
-
-    .trip-facets {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 12px;
-    }
-
-    .facet-chip {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--ink-dim, #8a8c82);
-      border: 1px solid var(--line-bright, #3a3f35);
-      padding: 3px 6px;
-      border-radius: 2px;
-    }
-
-    .progress-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 10px;
-    }
-    .progress-bar {
-      flex: 1;
-      height: 2px;
-      background: var(--line, #2a2e26);
-      position: relative;
-      overflow: hidden;
-    }
-    .progress-fill {
-      position: absolute;
-      inset: 0;
-      background: var(--accent, #d4ff3a);
-      transform-origin: left;
-    }
-    .progress-text {
-      color: var(--ink-dim, #8a8c82);
-      min-width: 38px;
-      text-align: right;
-    }
-
-    .delete-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--ink-faint, #555852);
-      font-size: 16px;
-      padding: 4px 8px;
-      font-family: var(--font-display);
-    }
-    .delete-btn:hover { color: var(--warn, #ff7a3a); }
-
-    /* ---- FAB ---- */
-    .fab {
-      position: absolute;
-      bottom: 24px;
-      right: 20px;
-      width: 56px;
-      height: 56px;
-      background: var(--accent, #d4ff3a);
-      color: var(--bg, #0e0f0c);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      font-weight: 300;
-      font-family: var(--font-display, 'Archivo', sans-serif);
-      box-shadow: 0 8px 24px rgba(212, 255, 58, 0.2);
-      cursor: pointer;
-      border: none;
-      z-index: 5;
-    }
-
-    /* ---- Add trip form (inline, shown when FAB toggled) ---- */
-    .add-form {
-      margin: 0 16px 12px;
-      display: flex;
-      gap: 8px;
-    }
-    .add-form input {
-      flex: 1;
-      padding: 10px 14px;
-      background: var(--panel, #161814);
-      border: 1px solid var(--line, #2a2e26);
-      border-radius: 4px;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 12px;
-      color: var(--ink, #e8e6df);
-      outline: none;
-    }
-    .add-form input::placeholder { color: var(--ink-faint, #555852); }
-    .add-form input:focus { border-color: var(--accent, #d4ff3a); }
-    .add-form button {
-      padding: 10px 16px;
-      background: var(--accent, #d4ff3a);
-      color: var(--bg, #0e0f0c);
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    .empty {
-      color: var(--ink-faint, #555852);
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 11px;
-      text-align: center;
-      padding: 40px 20px;
-    }
-
-    /* ============ DETAIL VIEW ============ */
-
-    .detail-header {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--line, #2a2e26);
-    }
-    .back-link {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 9px;
-      color: var(--ink-dim, #8a8c82);
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-    }
-    .back-link .accent { color: var(--accent, #d4ff3a); }
-
-    /* Pack progress block */
-    .pack-progress-block {
-      padding: 16px 20px 18px;
-      border-bottom: 1px solid var(--line, #2a2e26);
-      background: var(--panel, #161814);
-    }
-    .pack-counter {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .pack-counter .big {
-      font-family: var(--font-display, 'Archivo', sans-serif);
-      font-weight: 900;
-      font-size: 36px;
-      color: var(--accent, #d4ff3a);
-      line-height: 0.9;
-      font-variant-numeric: tabular-nums;
-    }
-    .pack-counter .of {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 14px;
-      color: var(--ink-dim, #8a8c82);
-    }
-    .pack-counter .label {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 9px;
-      color: var(--ink-dim, #8a8c82);
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      margin-left: auto;
-    }
-    .big-progress-bar {
-      height: 4px;
-      background: var(--line, #2a2e26);
-      position: relative;
-      overflow: hidden;
-    }
-    .big-progress-fill {
-      position: absolute;
-      inset: 0;
-      background: var(--accent, #d4ff3a);
-      transform-origin: left;
-      transition: transform 0.2s;
-    }
-
-    /* Facet toggles */
-    .facet-toggles {
-      padding: 12px 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      border-bottom: 1px solid var(--line, #2a2e26);
-    }
-    .facet-toggle {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--ink-faint, #555852);
-      border: 1px solid var(--line-bright, #3a3f35);
-      padding: 4px 8px;
-      border-radius: 2px;
-      background: none;
-      cursor: pointer;
-    }
-    .facet-toggle.active {
-      color: var(--ink, #e8e6df);
-      border-color: var(--accent, #d4ff3a);
-      background: var(--panel-2, #1d201b);
-    }
-
-    /* Checklist sections */
-    .facet-section {
-      border-bottom: 1px solid var(--line, #2a2e26);
-    }
-    .facet-section-header {
-      padding: 14px 20px 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      background: var(--bg, #0e0f0c);
-    }
-    .facet-section-name {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 10px;
-      color: var(--accent, #d4ff3a);
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      font-weight: 700;
-    }
-    .facet-section-count {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 9px;
-      color: var(--ink-faint, #555852);
-    }
-
-    .check-row {
-      padding: 11px 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      border-top: 1px solid var(--line, #2a2e26);
-      cursor: pointer;
-      transition: opacity 200ms ease;
-    }
-    .check-box {
-      width: 18px;
-      height: 18px;
-      border: 1.5px solid var(--line-bright, #3a3f35);
-      flex-shrink: 0;
-      position: relative;
-      border-radius: 2px;
-      transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
-    }
-    .check-box:active {
-      transform: scale(0.85);
-    }
-    .check-row.checked .check-box {
-      background: var(--accent, #d4ff3a);
-      border-color: var(--accent, #d4ff3a);
-    }
-    .check-row.checked .check-box::after {
-      content: '';
-      position: absolute;
-      left: 4px;
-      top: 1px;
-      width: 5px;
-      height: 9px;
-      border: solid var(--bg, #0e0f0c);
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg);
-    }
-    .check-label {
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--ink, #e8e6df);
-      flex: 1;
-      transition: color 200ms ease;
-    }
-    .check-row.checked .check-label {
-      color: var(--ink-faint, #555852);
-      text-decoration: line-through;
-      text-decoration-color: var(--ink-faint, #555852);
-    }
-
-    .actions {
-      padding: 16px 20px;
-    }
-    .actions button {
-      padding: 8px 14px;
-      border: 1px solid var(--line-bright, #3a3f35);
-      border-radius: 4px;
-      background: none;
-      cursor: pointer;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 10px;
-      color: var(--ink-dim, #8a8c82);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-    .actions button:hover { border-color: var(--warn, #ff7a3a); color: var(--warn, #ff7a3a); }
-  `;
-
-  private _animatedChecked = new AnimatedNumber(this);
-  private _animatedTotal = new AnimatedNumber(this);
-
+  static styles = [
+    viewStyles,
+    css`
+      .segments {
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        margin-bottom: 16px;
+        background: var(--panel);
+        border-radius: 14px;
+      }
+      .segments button {
+        flex: 1;
+        min-height: 44px;
+        border: 0;
+        border-radius: 11px;
+        background: none;
+        color: var(--ink-dim);
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .segments button[aria-pressed="true"] {
+        background: var(--panel-2);
+        color: var(--accent);
+      }
+      .archive-note {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--ink-dim);
+        margin-bottom: 12px;
+      }
+      .trip-status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: var(--ink-dim);
+      }
+      .status {
+        border-radius: 6px;
+        padding: 4px 7px;
+        background: var(--panel-2);
+        font-weight: 600;
+      }
+      .status.complete {
+        color: var(--accent);
+      }
+      .progress {
+        height: 6px;
+        overflow: hidden;
+        background: var(--line);
+        border-radius: 6px;
+        margin-top: 16px;
+      }
+      .fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: inherit;
+        transition: width 0.2s ease;
+      }
+      .trip-card .chips {
+        margin-top: 14px;
+      }
+      .detail-header {
+        padding: 0 22px 14px;
+      }
+      .detail-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .detail-header h1 {
+        font-size: 29px;
+      }
+      .progress-card {
+        padding: 20px;
+      }
+      .counter {
+        font-size: 38px;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+      }
+      .counter small {
+        font-size: 20px;
+        font-weight: 400;
+        color: var(--ink-dim);
+        letter-spacing: 0;
+      }
+      .progress-note {
+        font-size: 15px;
+        color: var(--ink-dim);
+        margin-top: 6px;
+      }
+      details {
+        padding: 16px;
+      }
+      summary {
+        cursor: pointer;
+        min-height: 28px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .facet-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .facet-toggle {
+        min-height: 44px;
+        padding: 10px 13px;
+        background: var(--panel-2);
+        color: var(--ink-dim);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        font-size: 15px;
+        overflow-wrap: anywhere;
+      }
+      .facet-toggle.active {
+        background: #d4ff3a16;
+        color: var(--accent);
+        border-color: var(--accent-dim);
+      }
+      .check-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 18px 0 8px;
+      }
+      .check-toolbar h2 {
+        font-size: 20px;
+        margin: 0;
+      }
+      .filter {
+        background: var(--panel-2);
+        color: var(--ink-dim);
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .filter[aria-pressed="true"] {
+        color: var(--accent);
+        border-color: var(--accent-dim);
+      }
+      .check-row {
+        display: flex;
+        width: 100%;
+        gap: 14px;
+        align-items: center;
+        min-height: 58px;
+        text-align: left;
+        padding: 14px 16px;
+        border: 0;
+        background: none;
+        font-size: 17px;
+      }
+      .check-row + .check-row {
+        border-top: 1px solid var(--line);
+      }
+      .check-name {
+        transition: color 180ms ease;
+      }
+      .checkbox {
+        transition: background-color 180ms ease, border-color 180ms ease;
+        width: 25px;
+        height: 25px;
+        border: 1.5px solid var(--ink-dim);
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+      }
+      .checkbox svg {
+        width: 18px;
+        height: 18px;
+      }
+      .check-row.checked .checkbox {
+        background: var(--accent);
+        color: var(--bg);
+        border-color: var(--accent);
+      }
+      .check-row.checked .check-name {
+        color: var(--ink-dim);
+        text-decoration: line-through;
+      }
+      .check-name {
+        overflow-wrap: anywhere;
+      }
+      .reset {
+        display: block;
+        margin: 18px auto 0;
+      }
+      .empty.compact {
+        padding: 28px 12px;
+      }
+    `,
+  ];
+  private animatedChecked = new AnimatedNumber(this);
+  private animatedTotal = new AnimatedNumber(this);
+  private counterTripId: Trip["id"] | null = null;
   private trips = fromStore(this, store, (s: AppState) => s.data.trips);
   private facets = fromStore(this, store, (s: AppState) => s.data.facets);
   private items = fromStore(this, store, (s: AppState) => s.data.items);
-  private selectedTripId = fromStore(this, store, (s: AppState) => s.selectedTripId);
+  private selected = fromStore(this, store, (s: AppState) => s.selectedTripId);
+  @state()
+  private remainingOnly = false;
+  @state()
+  private tripQuery = "";
+  @state()
+  private archivedView = false;
+  @state()
+  private checklistQuery = "";
+  @state()
+  private sharing = false;
+  @state()
+  private shareMessage = "";
+  @state()
+  private packingOrder: ReadonlySet<ItemId> | null = null;
+  private reorderTimer: ReturnType<typeof setTimeout> | undefined;
 
-  private handleAddTrip(e: SubmitEvent) {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const input = form.querySelector("input") as HTMLInputElement;
-    const name = input.value.trim();
-    if (!name) return;
-    store.put({
-      id: "trip/create",
-      data: { id: newTripId(), name, createdAt: new Date().toISOString() },
-    });
-    input.value = "";
-    input.focus();
+  private clearReorder() {
+    clearTimeout(this.reorderTimer);
+    this.reorderTimer = undefined;
+    this.packingOrder = null;
   }
 
+  override disconnectedCallback() {
+    this.clearReorder();
+    super.disconnectedCallback();
+  }
+
+  private togglePacked(trip: Trip, itemId: ItemId) {
+    // Checkmark, counter, persistence, and haptic update immediately. Keep the
+    // previous row order briefly so the check reads before the row moves.
+    this.packingOrder ??= new Set(trip.checked);
+    clearTimeout(this.reorderTimer);
+    this.reorderTimer = setTimeout(() => this.clearReorder(), 80);
+    store.put({ id: "trip/toggle-checked", data: { tripId: trip.id, itemId } });
+  }
+
+  private async share(trip: Trip) {
+    if (this.sharing) return;
+    this.sharing = true;
+    this.shareMessage = "";
+    try {
+      const result = await shareChecklist(
+        trip.name,
+        formatTripChecklist(trip, this.facets.value, this.items.value),
+      );
+      if (result === "copied") {
+        this.shareMessage =
+          "Checklist copied. Paste it into a message or note.";
+      }
+    } catch {
+      this.shareMessage = "Couldn’t share this checklist. Please try again.";
+    } finally {
+      this.sharing = false;
+    }
+  }
+
+  private async add() {
+    const name = await showDialog({
+      title: "New trip",
+      message: "Where are you headed? Give your packing list a name.",
+      value: "",
+      placeholder: "e.g. Weekend on the coast",
+      confirm: "Create",
+    });
+    if (!name) return;
+    const id = newTripId();
+    store.put({
+      id: "trip/create",
+      data: { id, name, createdAt: new Date().toISOString() },
+    });
+    this.tripQuery = "";
+    this.archivedView = false;
+    this.open(id);
+  }
+  private open(id: Trip["id"]) {
+    this.clearReorder();
+    this.shareMessage = "";
+    this.remainingOnly = false;
+    this.checklistQuery = "";
+    store.put({ id: "nav/select-trip", data: { tripId: id } });
+  }
+  private async packAgain(trip: Trip) {
+    const name = await showDialog({
+      title: "Pack again",
+      message:
+        "Reuse these facets with a fresh checklist. The original trip keeps its packing progress.",
+      value: `${trip.name} again`.slice(0, 120),
+      confirm: "Create trip",
+    });
+    if (!name) return;
+    const id = newTripId();
+    store.put({
+      id: "trip/duplicate",
+      data: {
+        sourceId: trip.id,
+        id,
+        name,
+        createdAt: new Date().toISOString(),
+      },
+    });
+    this.tripQuery = "";
+    this.archivedView = false;
+    this.open(id);
+  }
+  private archive(trip: Trip) {
+    store.put({
+      id: "trip/set-archived",
+      data: { id: trip.id, archived: !trip.archived },
+    });
+    this.tripQuery = "";
+    if (trip.archived) this.archivedView = false;
+  }
+  private async rename(trip: Trip) {
+    const name = await showDialog({ title: "Rename trip", value: trip.name });
+    if (name) store.put({ id: "trip/rename", data: { id: trip.id, name } });
+  }
+  private async handleDelete(trip: Trip) {
+    if (
+      await showDialog({
+        title: `Delete “${trip.name}”?`,
+        message:
+          "This packing list and its progress will be removed. Your facets and items stay in your library.",
+        confirm: "Delete",
+        destructive: true,
+      })
+    ) {
+      store.put({ id: "trip/delete", data: { id: trip.id } });
+    }
+  }
+  private async reset(trip: Trip) {
+    if (
+      await showDialog({
+        title: "Start packing again?",
+        message: "All items on this trip will be marked as unpacked.",
+        confirm: "Reset",
+        destructive: true,
+      })
+    ) {
+      store.put({ id: "trip/reset-checks", data: { tripId: trip.id } });
+    }
+  }
   private renderList() {
     const trips = this.trips.value;
     const facets = this.facets.value;
-    const facetMap = new Map(facets.map((f) => [f.id, f]));
-
+    const query = this.tripQuery.trim().toLocaleLowerCase();
+    const matching = [...trips]
+      .reverse()
+      .filter(
+        (trip) =>
+          Boolean(trip.archived) === this.archivedView &&
+          trip.name.toLocaleLowerCase().includes(query),
+      );
+    const archivedCount = trips.filter((trip) => trip.archived).length;
     return html`
-      <div class="screen-header">
-        <div class="screen-title">Trips</div>
-      </div>
-      <div class="screen-body">
-        <form class="add-form" @submit=${this.handleAddTrip}>
-          <input type="text" placeholder="New trip name..." />
-          <button type="submit">Add</button>
-        </form>
-
-        ${trips.length === 0
-          ? html`<p class="empty">No trips yet. Create one above.</p>`
-          : trips.map((trip) => {
-              const progress = packProgress(trip, facets);
-              const pct = progress.total > 0 ? progress.checked / progress.total : 0;
-              return html`
-                <div
-                  class="trip-card"
-                  @click=${() => store.put({ id: "nav/select-trip", data: { tripId: trip.id } })}
+      <header class="header">
+        <div>
+          <h1>Trips</h1>
+          <p class="subtitle">Less remembering. More going.</p>
+        </div>
+        <button class="add-button" aria-label="New trip" @click=${this.add}>
+          ${icon("plus")}
+        </button>
+      </header>
+      <div class="body">
+        ${trips.length
+          ? html`<div class="segments" aria-label="Trip lists">
+              <button
+                aria-label="Active trips"
+                aria-pressed=${!this.archivedView}
+                @click=${() => {
+            this.archivedView = false;
+            this.tripQuery = "";
+          }}
+              >
+                Active · ${trips.length - archivedCount}</button
+              ><button
+                aria-label="Archived trips"
+                aria-pressed=${this.archivedView}
+                @click=${() => {
+            this.archivedView = true;
+            this.tripQuery = "";
+          }}
+              >
+                Archived · ${archivedCount}
+              </button>
+            </div>`
+          : null}
+        ${trips.length
+          ? html`
+            <label class="search"
+            >${icon("search")}<input
+                            type="search"
+                            aria-label="Search trips"
+                            placeholder="Search trips"
+                            .value=${this.tripQuery}
+                            @input=${(e: Event) => {
+                              this.tripQuery =
+                                (e.target as HTMLInputElement).value;
+                            }}
+                        /></label>
+          `
+          : null}
+        ${trips.length && !matching.length && !query
+          ? html`<div class="empty">
+              <div class="empty-icon">${icon("archive")}</div>
+              <h2>
+                ${this.archivedView ? "No archived trips" : "No active trips"}
+              </h2>
+              <p>
+                ${
+            this.archivedView
+              ? "Archive a trip to keep its progress and make room for your next adventure."
+              : "Your past trips are in the archive. Plan a new one whenever you’re ready."
+          }
+              </p>
+              ${
+            !this.archivedView
+              ? html`<button class="primary" @click=${this.add}>
+                    Plan a trip
+                  </button>`
+              : null
+          }
+            </div>`
+          : null}
+        ${trips.length && !matching.length && query
+          ? html`
+            <div class="empty">
+              <h2>No trips found</h2>
+              <p>Try a different name, or plan a new trip.</p>
+              <button
+                class="text-button"
+                @click=${() => {
+                  this.tripQuery = "";
+                }}
+              >
+                            Clear search
+                          </button>
+            </div>
+          `
+          : null}
+        ${!trips.length
+          ? html`
+            <div class="empty">
+              <div class="empty-icon">${icon("trips")}</div>
+              <h2>Your next trip starts here</h2>
+              <p>
+                Create a trip, choose the facets that fit, and get one
+                checklist with everything you need.
+              </p>
+              <button class="primary" @click=${this.add}>
+                ${icon("plus")} Plan your first trip
+              </button>
+            </div>
+          `
+          : repeat(matching, (trip) => trip.id, (trip) => {
+            const { checked, total } = packProgress(trip, facets);
+            const complete = total > 0 && checked === total;
+            const date = new Date(trip.createdAt);
+            return html`
+              <article class="card trip-card" ${listMotion()}>
+                <button
+                  class="card-main"
+                  @click=${() => this.open(trip.id)}
+                  aria-label=${`Open ${trip.name}`}
                 >
-                  <div class="trip-meta-line">
-                    <span>${progress.checked === progress.total && progress.total > 0 ? "DONE" : "DRAFT"}</span>
+                  <div class="trip-status">
+                    <span class="status ${complete ? "complete" : ""}"
+                      >${trip.archived
+                        ? "Archived"
+                        : complete
+                        ? "Ready to go"
+                        : checked
+                        ? "Packing"
+                        : total
+                        ? "Ready to pack"
+                        : "Planning"}</span
+                    ><span
+                      >${Number.isNaN(date.getTime())
+                        ? ""
+                        : date.toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}</span
+                    >
                   </div>
-                  <div class="trip-name">${trip.name}</div>
-                  ${trip.facetIds.length > 0
+                  <span class="card-title"
+                    >${trip.name}${icon("chevron")}</span
+                  >
+                  ${trip.facetIds.length
+                    ? html`<div class="chips">
+                          ${
+                      trip.facetIds.map(
+                        (id) =>
+                          html`
+                            <span class="chip"
+                            >${facets.find((f) => f.id === id)?.name}</span>
+                          `,
+                      )
+                    }
+                        </div>`
+                    : null}
+                  ${total
                     ? html`
-                      <div class="trip-facets">
-                        ${trip.facetIds.map((fid) => {
-                          const f = facetMap.get(fid);
-                          return f ? html`<span class="facet-chip">${f.name}</span>` : nothing;
-                        })}
+                      <div class="progress">
+                        <div
+                          class="fill"
+                          style=${`width:${(checked / total) * 100}%`}
+                        ></div>
+                      </div>
+                      <div class="meta">
+                        ${checked} of ${total}
+                        packed${complete ? " · All set!" : ""}
                       </div>
                     `
-                    : nothing}
-                  <div class="progress-row">
-                    <div class="progress-bar">
-                      <div class="progress-fill" style="transform: scaleX(${pct})"></div>
-                    </div>
-                    <span class="progress-text">${progress.checked}/${progress.total}</span>
-                  </div>
+                    : html`<div class="meta">
+                          Choose facets to build your checklist
+                        </div>`}
+                </button>
+                <div class="toolbar">
+                  ${trip.facetIds.length
+                    ? html`
+                      <button
+                        class="text-button"
+                        aria-label=${`Pack ${trip.name} again`}
+                        @click=${() => this.packAgain(trip)}
+                      >
+                                                Pack again
+                                              </button>
+                    `
+                    : null}
                   <button
-                    class="delete-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      store.put({ id: "trip/delete", data: { id: trip.id } });
-                    }}
-                  >&times;</button>
+                    class=${trip.archived ? "text-button" : "icon-button"}
+                    aria-label=${`${
+                      trip.archived ? "Restore" : "Archive"
+                    } ${trip.name}`}
+                    title=${trip.archived ? "Restore trip" : "Archive trip"}
+                    @click=${() => this.archive(trip)}
+                  >
+                    ${trip.archived ? "Restore" : icon("archive")}
+                  </button>
+                  <button
+                    class="text-button"
+                    @click=${() => this.rename(trip)}
+                  >
+                    Rename</button
+                  ><button
+                    class="icon-button danger"
+                    aria-label=${`Delete ${trip.name}`}
+                    @click=${() => this.handleDelete(trip)}
+                  >
+                    ${icon("trash")}
+                  </button>
                 </div>
-              `;
-            })}
+              </article>
+            `;
+          })}
       </div>
     `;
   }
-
   private renderDetail(trip: Trip) {
     const facets = this.facets.value;
-    const items = this.items.value;
-    const progress = packProgress(trip, facets);
-    const pct = progress.total > 0 ? progress.checked / progress.total : 0;
-    const facetMap = new Map(facets.map((f) => [f.id, f]));
-
-    this._animatedChecked.target = progress.checked;
-    this._animatedTotal.target = progress.total;
-
+    const orderChecked = this.packingOrder ?? trip.checked;
+    const { checked, total } = packProgress(trip, facets);
+    if (this.counterTripId !== trip.id) {
+      this.animatedChecked.reset(checked);
+      this.animatedTotal.reset(total);
+      this.counterTripId = trip.id;
+    }
+    this.animatedChecked.target = checked;
+    this.animatedTotal.target = total;
+    const complete = total > 0 && checked === total;
+    const groups = new Map<string, { name: string; ids: ItemId[] }>();
+    const itemMap = new Map(this.items.value.map((item) => [item.id, item]));
+    const query = this.checklistQuery.trim().toLocaleLowerCase();
+    const matchesSearch = (id: ItemId) =>
+      (itemMap.get(id)?.name ?? "").toLocaleLowerCase().includes(query);
+    const visibleCount = tripChecklist(trip, facets).filter(
+      (id) =>
+        matchesSearch(id) && (!this.remainingOnly || !orderChecked.has(id)),
+    ).length;
+    // Build groups in facet order; each group displays unpacked items first.
+    for (const id of tripChecklist(trip, facets)) {
+      const owners = facets.filter(
+        (f) => trip.facetIds.includes(f.id) && f.itemIds.includes(id),
+      );
+      const key = owners
+        .map((f) => f.id)
+        .sort()
+        .join("+");
+      if (!groups.has(key)) {
+        groups.set(key, {
+          name: owners.map((f) => f.name).join(" + "),
+          ids: [],
+        });
+      }
+      groups.get(key)!.ids.push(id);
+    }
     return html`
-      <div class="detail-header">
-        <button class="back-link" @click=${() => store.put({ id: "nav/select-trip", data: { tripId: null } })}>
-          <span>\u2190 TRIPS</span>
-          <span class="accent">PACKING</span>
-        </button>
-        <div class="screen-title">${trip.name}</div>
-        <div class="screen-sub">${trip.facetIds.length} FACET${trip.facetIds.length !== 1 ? "S" : ""}</div>
-      </div>
-
-      <div class="pack-progress-block">
-        <div class="pack-counter">
-          <span class="big">${Math.round(this._animatedChecked.value)}</span>
-          <span class="of">/ ${Math.round(this._animatedTotal.value)}</span>
-          <span class="label">PACKED</span>
-        </div>
-        <div class="big-progress-bar">
-          <div class="big-progress-fill" style="transform: scaleX(${pct})"></div>
-        </div>
-      </div>
-
-      <div class="facet-toggles">
-        ${facets.map((facet) => {
-          const active = trip.facetIds.includes(facet.id);
-          return html`
-            <button
-              class="facet-toggle ${active ? "active" : ""}"
-              @click=${() =>
-                active
-                  ? store.put({ id: "trip/remove-facet", data: { tripId: trip.id, facetId: facet.id } })
-                  : store.put({ id: "trip/add-facet", data: { tripId: trip.id, facetId: facet.id } })}
-            >${facet.name}</button>
-          `;
-        })}
-      </div>
-
-      <div class="screen-body" style="padding-top: 0;">
-        ${(() => {
-          // Count how many selected facets each item appears in
-          const itemFacetCount = new Map<ItemId, number>();
-          for (const fid of trip.facetIds) {
-            const f = facetMap.get(fid);
-            if (!f) continue;
-            for (const itemId of f.itemIds) {
-              itemFacetCount.set(itemId, (itemFacetCount.get(itemId) ?? 0) + 1);
-            }
-          }
-
-          const sharedIds = new Set<ItemId>();
-          for (const [id, count] of itemFacetCount) {
-            if (count > 1) sharedIds.add(id);
-          }
-
-          const sortByChecked = (ids: readonly ItemId[]) =>
-            [...ids].sort((a, b) => {
-              const ac = trip.checked.has(a) ? 1 : 0;
-              const bc = trip.checked.has(b) ? 1 : 0;
-              return ac - bc;
-            });
-
-          const renderSection = (name: string, itemIds: ItemId[]) => {
-            if (itemIds.length === 0) return nothing;
-            const checkedCount = itemIds.filter((id) => trip.checked.has(id)).length;
-            return html`
-              <div class="facet-section">
-                <div class="facet-section-header">
-                  <span class="facet-section-name">${name}</span>
-                  <span class="facet-section-count">${checkedCount} / ${itemIds.length}</span>
-                </div>
-                ${itemIds.map((itemId) => {
-                  const item = items.find((i) => i.id === itemId);
-                  const checked = trip.checked.has(itemId);
-                  return html`
-                    <div
-                      class="check-row ${checked ? "checked" : ""}"
-                      ${animate({ keyframeOptions: { duration: 300, easing: 'ease-in-out' }, skipInitial: true })}
-                      @click=${() => store.put({ id: "trip/toggle-checked", data: { tripId: trip.id, itemId } })}
-                    >
-                      <div class="check-box"></div>
-                      <div class="check-label">${item?.name ?? "(deleted)"}</div>
-                    </div>
-                  `;
-                })}
-              </div>
-            `;
-          };
-
-          // Per-facet sections (exclusive items only)
-          const facetSections = trip.facetIds.map((facetId) => {
-            const facet = facetMap.get(facetId);
-            if (!facet) return nothing;
-            const exclusive = sortByChecked(facet.itemIds.filter((id) => !sharedIds.has(id)));
-            return renderSection(facet.name, exclusive);
-          });
-
-          // Group shared items by their exact facet combination
-          const itemToFacets = new Map<ItemId, FacetId[]>();
-          for (const fid of trip.facetIds) {
-            const f = facetMap.get(fid);
-            if (!f) continue;
-            for (const id of f.itemIds) {
-              if (sharedIds.has(id)) {
-                const list = itemToFacets.get(id) ?? [];
-                list.push(fid);
-                itemToFacets.set(id, list);
-              }
-            }
-          }
-
-          // Group by facet combo key
-          const comboGroups = new Map<string, ItemId[]>();
-          for (const [itemId, fids] of itemToFacets) {
-            const key = fids.join("+");
-            const group = comboGroups.get(key) ?? [];
-            group.push(itemId);
-            comboGroups.set(key, group);
-          }
-
-          const sharedSections = [...comboGroups.entries()].map(([key, itemIds]) => {
-            const facetNames = key.split("+").map((fid) => facetMap.get(facetId(fid))?.name ?? fid);
-            return renderSection(facetNames.join(" + "), sortByChecked(itemIds));
-          });
-
-          return [...sharedSections, ...facetSections];
-        })()}
-
-        <div class="actions">
-          <button @click=${() => store.put({ id: "trip/reset-checks", data: { tripId: trip.id } })}>
-            Reset all
+      <header class="detail-header">
+        <div class="detail-nav">
+          <button
+            class="back"
+            @click=${() =>
+              store.put({
+                id: "nav/select-trip",
+                data: { tripId: null },
+              })}
+          >
+            ${icon("back")} Trips</button
+          ><button
+            class="icon-button"
+            aria-label="Rename trip"
+            @click=${() => this.rename(trip)}
+          >
+            ${icon("edit")}
           </button>
         </div>
+        <h1>${trip.name}</h1>
+      </header>
+      <div class="body">
+        ${trip.archived
+          ? html`<div class="archive-note">
+              <span>Archived trip</span
+              ><button class="text-button" @click=${() => this.archive(trip)}>
+                Restore trip
+              </button>
+            </div>`
+          : null}
+        <section class="card progress-card" aria-label="Packing progress">
+          <div class="counter" role="group" aria-label=${`${checked} of ${total} packed`}><span aria-hidden="true">${Math
+            .round(this.animatedChecked.value)} <small>/ ${Math.round(
+              this.animatedTotal.value,
+            )} packed</small></span></div>
+          <div class="progress-note" role="status">
+            ${complete
+              ? "All packed. Have a great trip!"
+              : total
+              ? `${total - checked} item${
+                total - checked === 1 ? "" : "s"
+              } left to pack`
+              : "Your adventure, one item at a time."}
+          </div>
+          <div
+            class="progress"
+            role="progressbar"
+            aria-label="Items packed"
+            aria-valuenow=${checked}
+            aria-valuemin="0"
+            aria-valuemax=${total || 1}
+          >
+            <div
+              class="fill"
+              style=${`width:${total ? (checked / total) * 100 : 0}%`}
+            ></div>
+          </div>
+          ${total
+            ? html`
+              <button
+                class="text-button"
+                aria-label="Share checklist"
+                ?disabled=${this.sharing}
+                @click=${() => this.share(trip)}
+              >${icon("share")} Share checklist</button>
+            `
+            : null}
+          ${this.shareMessage
+            ? html`<p class="meta" role="status">${this.shareMessage}</p>`
+            : null}
+        </section>
+        <details class="card" open>
+          <summary
+            aria-label=${`Choose facets, ${trip.facetIds.length} selected`}
+          >
+            Facets <span class="meta">· ${trip.facetIds.length} selected</span>
+          </summary>
+          <p class="meta">
+            Choose what fits this trip. Shared items appear just once.
+          </p>
+          ${facets.length
+            ? html`<div class="facet-options">
+                ${
+              facets.map((facet) => {
+                const active = trip.facetIds.includes(facet.id);
+                return html`
+                  <button
+                    class="facet-toggle ${active ? "active" : ""}"
+                    aria-pressed=${active}
+                    @click=${() =>
+                      store.put({
+                        id: active ? "trip/remove-facet" : "trip/add-facet",
+                        data: { tripId: trip.id, facetId: facet.id },
+                      })}
+                  >
+                    ${active ? "✓ " : "＋ "}${facet.name}
+                  </button>
+                `;
+              })
+            }
+              </div>`
+            : html`
+              <p class="meta">Create a facet first, then add it here.</p>
+              <button class="text-button" @click=${() => navigate("facets")}>
+                                Create a facet →
+                              </button>
+            `}
+        </details>
+        ${total
+          ? html`<div class="check-toolbar">
+                <h2>Checklist</h2>
+                <button
+                  class="filter"
+                  aria-pressed=${this.remainingOnly}
+                  @click=${() => {
+            this.remainingOnly = !this.remainingOnly;
+          }}
+                >
+                  ${this.remainingOnly ? "Show all" : "Unpacked only"}
+                </button>
+              </div>
+              <label class="search"
+                >${icon("search")}<input
+                  type="search"
+                  aria-label="Search checklist"
+                  placeholder="Find an item"
+                  .value=${this.checklistQuery}
+                  @input=${(e: Event) => {
+            this.checklistQuery = (e.target as HTMLInputElement).value;
+          }}
+              /></label>
+              ${
+            !visibleCount && query
+              ? html`
+                <div class="empty compact">
+                  <h2>No matching items</h2>
+                  <p>
+                                      ${this.remainingOnly
+                                        ? "Try another name or show packed items too."
+                                        : "Try another item name."}
+                                    </p>
+                  <button
+                    class="text-button"
+                    @click=${() => {
+                      this.checklistQuery = "";
+                    }}
+                  >
+                                      Clear search
+                                    </button>
+                </div>
+              `
+              : null
+          }
+              ${
+            complete && this.remainingOnly && !query && !this.packingOrder
+              ? html`
+                <div class="empty compact">
+                  <div class="empty-icon">${icon("check")}</div>
+                  <h2>You’re all set</h2>
+                  <p>Everything on your list is packed.</p>
+                </div>
+              `
+              : repeat([...groups.entries()], ([key]) => key, ([, group]) => {
+                const visible = group.ids.filter(
+                  (id) =>
+                    matchesSearch(id) &&
+                    (!this.remainingOnly || !orderChecked.has(id)),
+                ).sort((a, b) =>
+                  Number(orderChecked.has(a)) - Number(orderChecked.has(b))
+                );
+                if (!visible.length) return null;
+                return html`
+                  <section ${listMotion()}>
+                    <h3 class="section-label">
+                    ${group.name} ·
+                    ${group.ids.filter((id) => trip.checked.has(id))
+                      .length}/${group.ids.length}
+                    </h3>
+                    <div class="card">
+                    ${repeat(visible, (id) => id, (id) => {
+                      const packed = trip.checked.has(id);
+                      const name = itemMap.get(id)?.name ?? "Missing item";
+                      return html`
+                        <button
+                          class="check-row ${packed ? "checked" : ""}"
+                          ${listMotion()}
+                          role="checkbox"
+                          aria-checked=${packed}
+                          aria-label=${name}
+                          @click=${() => this.togglePacked(trip, id)}
+                        >
+                          <span class="checkbox"
+                            >${packed ? icon("check") : null}</span
+                          ><span class="check-name">${name}</span>
+                        </button>
+                      `;
+                    })}
+                    </div>
+                  </section>
+                `;
+              })
+          }
+              <button
+                class="text-button reset danger"
+                ?disabled=${checked === 0}
+                @click=${() => this.reset(trip)}
+              >
+                Reset packing progress
+              </button>`
+          : html`
+            <div class="empty compact">
+              <div class="empty-icon">${icon("items")}</div>
+              <h2>
+                ${trip.facetIds.length
+                  ? "These facets are empty"
+                  : "What’s coming with you?"}
+              </h2>
+              <p>
+                ${trip.facetIds.length
+                  ? "Add items to your facets to start packing."
+                  : "Select your facets above to build a packing list for this trip."}
+              </p>
+              <button class="text-button" @click=${() => navigate("facets")}>
+                ${trip.facetIds.length
+                  ? "Add items to facets"
+                  : "Manage facets"}
+                →
+              </button>
+            </div>
+          `}
       </div>
     `;
   }
-
   render() {
-    const selectedId = this.selectedTripId.value;
-    const selectedTrip = selectedId
-      ? this.trips.value.find((t) => t.id === selectedId) ?? null
-      : null;
-
-    return selectedTrip ? this.renderDetail(selectedTrip) : this.renderList();
+    const trip = this.trips.value.find((t) => t.id === this.selected.value);
+    return trip ? this.renderDetail(trip) : this.renderList();
   }
 }

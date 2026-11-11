@@ -7,6 +7,7 @@ export interface Trip {
   readonly name: string;
   readonly createdAt: string;
   readonly facetIds: readonly FacetId[];
+  readonly archived?: boolean;
   readonly checked: ReadonlySet<ItemId>;
 }
 
@@ -28,6 +29,22 @@ export function createTrip(
     facetIds: [],
     checked: new Set(),
   }];
+}
+
+/** Reuse a trip's facets without carrying over its packing progress. */
+export function duplicateTrip(
+  trips: readonly Trip[],
+  sourceId: TripId,
+  id: TripId,
+  name: string,
+  createdAt: string,
+): readonly Trip[] {
+  const source = trips.find((trip) => trip.id === sourceId);
+  invariant(source, `Trip with id "${sourceId}" not found`);
+  const result = createTrip(trips, id, name, createdAt);
+  return result.map((trip) =>
+    trip.id === id ? { ...trip, facetIds: [...source.facetIds] } : trip
+  );
 }
 
 export function renameTrip(
@@ -102,9 +119,7 @@ export function resetChecks(
     trips.some((t) => t.id === tripId),
     `Trip with id "${tripId}" not found`,
   );
-  return trips.map((t) =>
-    t.id === tripId ? { ...t, checked: new Set() } : t
-  );
+  return trips.map((t) => t.id === tripId ? { ...t, checked: new Set() } : t);
 }
 
 export function deleteTrip(
@@ -116,4 +131,17 @@ export function deleteTrip(
     `Trip with id "${id}" not found`,
   );
   return trips.filter((t) => t.id !== id);
+}
+
+/** Archiving changes organization only; packing progress and facets stay intact. */
+export function setTripArchived(
+  trips: readonly Trip[],
+  id: TripId,
+  archived: boolean,
+): readonly Trip[] {
+  invariant(
+    trips.some((trip) => trip.id === id),
+    `Trip with id "${id}" not found`,
+  );
+  return trips.map((trip) => trip.id === id ? { ...trip, archived } : trip);
 }

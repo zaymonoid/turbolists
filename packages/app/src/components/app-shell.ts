@@ -1,8 +1,9 @@
-import { LitElement, html, css, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement } from "lit/decorators.js";
 import { fromStore } from "@zaymonoid/katha/lit";
 import { store } from "../store/index.ts";
 import type { AppState } from "../store/state.ts";
+import { icon } from "./ui.ts";
 import "./facets-view.ts";
 import "./trips-view.ts";
 import "./items-view.ts";
@@ -14,133 +15,199 @@ export class AppShell extends LitElement {
       display: flex;
       flex-direction: column;
       height: 100dvh;
-      background: var(--bg, #0e0f0c);
+      background: var(--bg);
+      padding-top: env(safe-area-inset-top);
     }
-
-    /* Keeps content clear of the status bar / notch on iOS */
-    .safe-top {
-      height: env(safe-area-inset-top);
-      flex-shrink: 0;
+    * {
+      box-sizing: border-box;
     }
-
-    .screen-content {
+    .content {
       flex: 1;
-      overflow-y: auto;
+      min-height: 0;
       display: flex;
       flex-direction: column;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
-
-    /* ---- Tab bar ---- */
-    .tab-bar {
-      height: calc(64px + env(safe-area-inset-bottom));
-      padding-bottom: env(safe-area-inset-bottom);
-      border-top: 1px solid var(--line, #2a2e26);
-      background: var(--panel, #161814);
+    nav {
       display: flex;
       flex-shrink: 0;
+      padding: 6px max(12px, env(safe-area-inset-right))
+        calc(8px + env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      border-top: 1px solid var(--line);
+      background: var(--panel);
     }
-
     .tab {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      font-family: var(--font-mono, 'JetBrains Mono', monospace);
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--ink-faint, #555852);
-      position: relative;
-      padding-top: 6px;
-      cursor: pointer;
-      border: none;
+      gap: 5px;
+      min-height: 52px;
+      font: 500 11px var(--font-display);
+      color: var(--ink-dim);
+      border: 0;
+      border-radius: 13px;
       background: none;
+      cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-
     .tab.active {
-      color: var(--accent, #d4ff3a);
+      color: var(--accent);
     }
-
-    .tab.active::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 30%;
-      right: 30%;
-      height: 1px;
-      background: var(--accent, #d4ff3a);
+    .tab svg {
+      width: 25px;
+      height: 25px;
     }
-
-    /* Tab icons */
-    .tab-icon {
-      width: 18px;
-      height: 18px;
-      position: relative;
+    .tab:focus-visible {
+      outline: 2px solid var(--accent);
     }
-
-    .tab-icon.trips {
-      border: 1.5px solid currentColor;
+    .undo-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px 4px 16px;
+      margin: 8px max(18px, env(safe-area-inset-left));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel-2);
+      font-size: 15px;
+      flex-shrink: 0;
     }
-    .tab-icon.trips::after {
-      content: '';
-      position: absolute;
-      top: 3px; left: 3px; right: 3px;
-      height: 2px;
-      background: currentColor;
-      box-shadow: 0 4px 0 currentColor, 0 8px 0 currentColor;
+    .undo-banner span {
+      flex: 1;
     }
-
-    .tab-icon.facets {
-      border: none;
-      height: 14px;
-      background:
-        linear-gradient(currentColor, currentColor) 0 0 / 100% 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 50% / 100% 1.5px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 100% / 100% 1.5px no-repeat;
+    .undo-banner button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px;
+      border: 0;
+      background: none;
+      color: var(--accent);
+      font: 600 15px var(--font-display);
+      cursor: pointer;
     }
-
-    .tab-icon.items {
-      border: none;
-      background:
-        linear-gradient(currentColor, currentColor) 0 0 / 7px 7px no-repeat,
-        linear-gradient(currentColor, currentColor) 11px 0 / 7px 7px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 11px / 7px 7px no-repeat,
-        linear-gradient(currentColor, currentColor) 11px 11px / 7px 7px no-repeat;
+    .undo-banner .dismiss {
+      color: var(--ink-dim);
+      display: grid;
+      place-items: center;
+    }
+    .banner {
+      padding: 12px 18px;
+      color: var(--warn);
+      background: var(--panel);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .banner span {
+      flex: 1;
+    }
+    .banner button {
+      background: none;
+      color: var(--accent);
+      border: 0;
+      min-height: 44px;
+      font: inherit;
     }
   `;
-
+  private undo = fromStore(this, store, (s: AppState) => s.undo);
   private view = fromStore(this, store, (s: AppState) => s.view);
-
+  private loadStatus = fromStore(this, store, (s: AppState) => s.loadStatus);
+  private persistence = fromStore(this, store, (s: AppState) => s.persistence);
+  private navigate = (event: Event) =>
+    this.setView((event as CustomEvent).detail);
+  connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener("app-navigate", this.navigate);
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    document.removeEventListener("app-navigate", this.navigate);
+  }
   private setView(view: AppState["view"]) {
     store.put({ id: "nav/set-view", data: { view } });
   }
-
   render() {
     const v = this.view.value;
+    if (this.loadStatus.value !== "ready") {
+      return html`
+        <div
+          class="content"
+          style="justify-content:center;align-items:center;padding:24px;text-align:center"
+        >
+          <h1>Turbolists</h1>
+          ${this.loadStatus.value === "loading"
+            ? html`<p role="status">Getting your lists ready…</p>`
+            : html`<p role="alert">
+                  We couldn’t open your saved lists. Try loading them again.
+                </p>
+                <button
+                  class="tab active"
+                  style="flex:0"
+                  @click=${() =>
+                    document.dispatchEvent(new Event("app-retry-load"))}
+                >
+                  Try again
+                </button>`}
+        </div>
+      `;
+    }
     return html`
-      <div class="safe-top"></div>
-      <div class="screen-content">
+      ${this.persistence.value === "error"
+        ? html`
+            <div class="banner" role="alert">
+              <span>Your changes couldn’t be saved.</span
+              ><button
+                @click=${() =>
+                  store.put({
+                    id: "store/retry-save",
+                    data: {},
+                  })}
+              >
+                Retry
+              </button>
+            </div>
+          `
+        : nothing}
+      <main class="content">
         ${v === "trips" ? html`<trips-view></trips-view>` : nothing}
         ${v === "facets" ? html`<facets-view></facets-view>` : nothing}
         ${v === "items" ? html`<items-view></items-view>` : nothing}
-      </div>
-      <div class="tab-bar">
-        <button class="tab ${v === "trips" ? "active" : ""}" @click=${() => this.setView("trips")}>
-          <div class="tab-icon trips"></div>
-          Trips
-        </button>
-        <button class="tab ${v === "facets" ? "active" : ""}" @click=${() => this.setView("facets")}>
-          <div class="tab-icon facets"></div>
-          Facets
-        </button>
-        <button class="tab ${v === "items" ? "active" : ""}" @click=${() => this.setView("items")}>
-          <div class="tab-icon items"></div>
-          Items
-        </button>
-      </div>
+      </main>
+      ${this.undo.value
+        ? html`<div class="undo-banner">
+            <span role="status">${this.undo.value.message}</span
+            ><button @click=${() => store.put({ id: "store/undo", data: {} })}>
+              Undo</button
+            ><button
+              class="dismiss"
+              aria-label="Dismiss undo"
+              @click=${() => store.put({ id: "store/dismiss-undo", data: {} })}
+            >
+              ${icon("close")}
+            </button>
+          </div>`
+        : nothing}
+      <nav aria-label="Main navigation">
+        ${(["trips", "facets", "items"] as const).map(
+          (tab) => html`
+            <button
+              class="tab ${v === tab ? "active" : ""}"
+              aria-current=${v === tab ? "page" : nothing}
+              @click=${() => this.setView(tab)}
+            >
+              ${icon(tab)}<span>${tab[0].toUpperCase() + tab.slice(1)}</span>
+            </button>
+          `,
+        )}
+      </nav>
     `;
   }
 }

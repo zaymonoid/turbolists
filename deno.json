@@ -1,11 +1,19 @@
 {
-  "workspace": ["./packages/core", "./packages/app"],
+  "workspace": [
+    "./packages/core",
+    "./packages/app"
+  ],
   "nodeModulesDir": "auto",
   "lock": false,
   "tasks": {
     "dev": "cd packages/app && deno task tauri dev",
     "dev:ios": "cd packages/app && deno task tauri ios dev",
-    "test": "cd packages/core && deno test src/",
-    "typecheck": "cd packages/core && deno check src/"
+    "test": "deno task test:core && deno task test:app",
+    "typecheck": "cd packages/core && deno check src/",
+    "setup:ios-testing": "deno run -A tools/setup-ios-testing.ts",
+    "test:ios": "deno run -A tools/test-ios.ts",
+    "test:ui": "deno run -A tools/test-ui.ts",
+    "test:core": "cd packages/core && deno test src/",
+    "test:app": "deno test --allow-env=NODE_ENV packages/app/tests/"
   }
 }
