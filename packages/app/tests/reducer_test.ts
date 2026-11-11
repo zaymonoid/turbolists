@@ -14,6 +14,7 @@ function initial(): AppState {
   return {
     view: "items",
     selectedTripId: trip,
+    selectedKitId: kit,
     loadStatus: "ready",
     persistence: "saved",
     undo: null,
@@ -107,4 +108,19 @@ Deno.test("archiving is reversible without losing checked progress", () => {
   assertEquals(after.data.trips[0].archived, true);
   assertEquals(after.data.trips[0].checked, before.data.trips[0].checked);
   assertEquals(reduce(after, undo).data, before.data);
+});
+
+Deno.test("deleting the open kit returns to the kit list; other kits stay open", () => {
+  const before = initial();
+  const other = kitId("beach");
+  const opened = reduce(before, { id: "nav/select-kit", data: { kitId: other } });
+  assertEquals(opened.selectedKitId, other);
+  assertEquals(
+    reduce(opened, { id: "kit/delete", data: { id: kit } }).selectedKitId,
+    other,
+  );
+  assertEquals(
+    reduce(before, { id: "kit/delete", data: { id: kit } }).selectedKitId,
+    null,
+  );
 });

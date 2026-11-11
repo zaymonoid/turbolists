@@ -16,6 +16,7 @@ export const icon = (name: string) => {
     check: "m5 12 4 4L19 6",
     search: "M21 21l-6-6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z",
     close: "m6 6 12 12M6 18 18 6",
+    grip: "M5 8h14M5 12h14M5 16h14",
   };
   return html`
     <svg
@@ -303,6 +304,22 @@ export const viewStyles = css`
     border: 0;
     color: var(--accent);
     font-size: 17px;
+  }
+  .detail-header {
+    padding: 0 22px 14px;
+  }
+  .detail-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .detail-header h1 {
+    font-size: 29px;
+  }
+  .nav-actions {
+    display: flex;
+    margin-right: -10px;
   }
   @media (prefers-reduced-motion: reduce) {
     * {

@@ -7,6 +7,7 @@ import { createItem, renameItem } from "@turbolists/core/item";
 import {
   addItemToKit,
   createKit,
+  moveItemInKit,
   removeItemFromKit,
   renameKit,
 } from "@turbolists/core/kit";
@@ -58,6 +59,9 @@ const reduceAction: Reducer<AppState, AppAction> = (state, action) => {
     case "kit/delete":
       return produce(state, (draft) => {
         draft.data = castDraft(deleteStoreKit(state.data, action.data.id));
+        if (state.selectedKitId === action.data.id) {
+          draft.selectedKitId = null;
+        }
       });
     case "kit/add-item":
       return produce(state, (draft) => {
@@ -76,6 +80,17 @@ const reduceAction: Reducer<AppState, AppAction> = (state, action) => {
             state.data.kits,
             action.data.kitId,
             action.data.itemId,
+          ),
+        );
+      });
+    case "kit/move-item":
+      return produce(state, (draft) => {
+        draft.data.kits = castDraft(
+          moveItemInKit(
+            state.data.kits,
+            action.data.kitId,
+            action.data.itemId,
+            action.data.toIndex,
           ),
         );
       });
@@ -174,6 +189,10 @@ const reduceAction: Reducer<AppState, AppAction> = (state, action) => {
     case "nav/select-trip":
       return produce(state, (draft) => {
         draft.selectedTripId = action.data.tripId;
+      });
+    case "nav/select-kit":
+      return produce(state, (draft) => {
+        draft.selectedKitId = action.data.kitId;
       });
 
     // Recovery

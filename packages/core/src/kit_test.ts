@@ -4,12 +4,13 @@ import {
   addItemToKit,
   createKit,
   deleteKit,
-  type Kit,
   findKit,
-  renameKit,
+  type Kit,
+  moveItemInKit,
   removeItemFromKit,
+  renameKit,
 } from "./kit.ts";
-import { kitId, itemId } from "./ids.ts";
+import { itemId, kitId } from "./ids.ts";
 
 const f1 = kitId("f1");
 const f2 = kitId("f2");
@@ -201,6 +202,60 @@ Deno.test("property: create N kits then delete all yields empty", () => {
         }
         for (const id of ids) kits = deleteKit(kits, id);
         assertEquals(kits.length, 0);
+      },
+    ),
+  );
+});
+
+Deno.test("moveItemInKit - moves an item to the target index", () => {
+  const kits: Kit[] = [{ id: f1, name: "A", itemIds: [i1, i2, i3] }];
+  assertEquals(moveItemInKit(kits, f1, i1, 2)[0].itemIds, [i2, i3, i1]);
+  assertEquals(moveItemInKit(kits, f1, i3, 0)[0].itemIds, [i3, i1, i2]);
+  assertEquals(moveItemInKit(kits, f1, i2, 1)[0].itemIds, [i1, i2, i3]);
+});
+
+Deno.test("moveItemInKit - clamps the index and leaves other kits alone", () => {
+  const kits: Kit[] = [
+    { id: f1, name: "A", itemIds: [i1, i2, i3] },
+    { id: f2, name: "B", itemIds: [i1, i2] },
+  ];
+  const moved = moveItemInKit(kits, f1, i1, 99);
+  assertEquals(moved[0].itemIds, [i2, i3, i1]);
+  assertEquals(moved[1], kits[1]);
+  assertEquals(moveItemInKit(kits, f1, i3, -4)[0].itemIds, [i3, i1, i2]);
+});
+
+Deno.test("moveItemInKit - throws when the item is not in the kit", () => {
+  const kits: Kit[] = [{ id: f1, name: "A", itemIds: [i1] }];
+  assertThrows(() => moveItemInKit(kits, f1, i2, 0), Error, "is not in kit");
+  assertThrows(() => moveItemInKit(kits, f2, i1, 0), Error, "not found");
+});
+
+Deno.test("moveItemInKit - always yields a permutation with the item at the clamped index", () => {
+  fc.assert(
+    fc.property(
+      fc.uniqueArray(fc.string({ minLength: 1 }), { minLength: 1 }),
+      fc.nat(),
+      fc.integer({ min: -3, max: 40 }),
+      (names, pick, toIndex) => {
+        const ids = names.map((n) => itemId(n));
+        const moving = ids[pick % ids.length];
+        const result = moveItemInKit(
+          [{ id: f1, name: "A", itemIds: ids }],
+          f1,
+          moving,
+          toIndex,
+        )[0]
+          .itemIds;
+        assertEquals([...result].sort(), [...ids].sort());
+        assertEquals(
+          result.indexOf(moving),
+          Math.max(0, Math.min(ids.length - 1, toIndex)),
+        );
+        assertEquals(
+          result.filter((id) => id !== moving),
+          ids.filter((id) => id !== moving),
+        );
       },
     ),
   );

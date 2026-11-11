@@ -164,13 +164,19 @@ try {
   await type(`Add item to ${kit}`, item);
   await call("key_press", { keyCode: 40 });
   await dismissKeyboard();
+  // A new kit opens on its own screen; its items are plain rows.
   await expectText(item);
+  await tap("Kits");
   await type("Search kits", `missing-${suffix}`);
   await dismissKeyboard();
   await expectText("No kits found");
   await type("Search kits", item);
   await dismissKeyboard();
-  await expectText(item);
+  await snapshot();
+  // The kit row previews its items, so a contained item finds the kit.
+  if (!targets().some((t) => t.label.startsWith(kit))) {
+    throw new Error(`Kit not found by its item: ${JSON.stringify(screen)}`);
+  }
   console.log("PASS: create kit/item and search kits by contained items");
 
   await tap("Trips", true);
@@ -278,7 +284,7 @@ try {
   await tap(`Delete ${trip}`);
   await tap("Delete");
   await tap("Kits", true);
-  // Kit starts collapsed after navigating back to this screen.
+  // Deleting happens on the kit's own screen.
   await snapshot();
   const kitButton = targets().find((t) => t.label.startsWith(kit));
   if (!kitButton) throw new Error(`Missing created kit: ${kit}`);

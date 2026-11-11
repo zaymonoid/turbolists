@@ -8,6 +8,7 @@ export interface AppState {
   readonly persistence: "saved" | "error";
   readonly undo: { readonly data: Store; readonly message: string } | null;
   readonly selectedTripId: TripId | null;
+  readonly selectedKitId: KitId | null;
 }
 
 export type AppAction =
@@ -21,6 +22,10 @@ export type AppAction =
   | { id: "kit/delete"; data: { id: KitId } }
   | { id: "kit/add-item"; data: { kitId: KitId; itemId: ItemId } }
   | { id: "kit/remove-item"; data: { kitId: KitId; itemId: ItemId } }
+  | {
+    id: "kit/move-item";
+    data: { kitId: KitId; itemId: ItemId; toIndex: number };
+  }
   // Trips
   | { id: "trip/create"; data: { id: TripId; name: string; createdAt: string } }
   | {
@@ -37,6 +42,7 @@ export type AppAction =
   // Navigation
   | { id: "nav/set-view"; data: { view: AppState["view"] } }
   | { id: "nav/select-trip"; data: { tripId: TripId | null } }
+  | { id: "nav/select-kit"; data: { kitId: KitId | null } }
   // Recovery
   | { id: "store/undo"; data: {} }
   | { id: "store/dismiss-undo"; data: {} }
@@ -57,6 +63,7 @@ export const dataActionIds = [
   "kit/delete",
   "kit/add-item",
   "kit/remove-item",
+  "kit/move-item",
   "trip/create",
   "trip/set-archived",
   "trip/duplicate",

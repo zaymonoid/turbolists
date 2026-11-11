@@ -12,6 +12,7 @@ const initialState: AppState = {
   persistence: "saved",
   view: "trips",
   selectedTripId: null,
+  selectedKitId: null,
 };
 
 class AppStore extends Effect.Service<AppStore>()("AppStore", {

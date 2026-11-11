@@ -84,22 +84,6 @@ export class TripsView extends LitElement {
       .trip-card .chips {
         margin-top: 14px;
       }
-      .detail-header {
-        padding: 0 22px 14px;
-      }
-      .detail-nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-      }
-      .detail-header h1 {
-        font-size: 29px;
-      }
-      .nav-actions {
-        display: flex;
-        margin-right: -10px;
-      }
       .pack-progress {
         margin: 4px 4px 6px;
       }
