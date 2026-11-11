@@ -249,6 +249,11 @@ struct TripDetailView: View {
     // MARK: Packing
 
     private func toggle(_ id: ItemId) {
+        // With "Unpacked only" on, a row just packed fades out but still takes taps
+        // (and sits above the row sliding into its place). Ignore taps on rows the
+        // filter already hides, judged by the live state, not this render's `trip`.
+        let checked = store.state.data.trips.first { $0.id == trip.id }?.checked ?? trip.checked
+        if remainingOnly && checked.contains(id) { return }
         lastToggled = id
         store.send(.toggleChecked(tripId: trip.id, itemId: id))
         hapticTick += 1
