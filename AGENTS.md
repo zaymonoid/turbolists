@@ -16,10 +16,10 @@ or `fix: preserve kit order`).
 
 Turbolists is a native SwiftUI iOS app in `swift/`. All new work goes there.
 
-The original Tauri/Lit app in `packages/` and its WebView tooling in `tools/` are
-kept **for reference only**: read them to check how something used to behave, but
-do not add features or fix bugs there, and do not keep the two in sync. Notes for
-running the old app are in `packages/AGENTS.md`.
+The original Tauri/Lit app in `packages/` is kept **for reference only**: read it
+to check how something used to behave, but do not add features or fix bugs there,
+and do not keep the two in sync. Notes for running the old app are in
+`packages/AGENTS.md`.
 
 - `swift/TurbolistsCore/`: Swift package with the pure domain logic (items, kits,
   trips, `Library`, checklist/progress helpers) and its tests. Free functions that
@@ -117,5 +117,4 @@ setup step is needed. The same tools are available from the shell as
 - The simulator may also hold the old app (`com.turbolists.app`) with real data.
   Never reset or erase the simulator or touch that app. Create and clean up your
   own test data through the UI.
-- There is no end-to-end smoke test for the SwiftUI app yet; `deno task test:ios`
-  targets the old app and will not pass against this one.
+- There is no end-to-end smoke test for the SwiftUI app yet.

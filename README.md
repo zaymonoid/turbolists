@@ -9,7 +9,7 @@ Turbolists is a native **SwiftUI** iOS app, in [`swift/`](swift/). The original 
 - `swift/TurbolistsCore`: domain logic (items, kits, trips, library, checklist helpers) as a Swift package.
 - `swift/Turbolists`: the SwiftUI app. State lives in an [ObservableStore](https://github.com/subconsciousnetwork/ObservableStore) store; data is saved as JSON in Application Support.
 - `swift/AppLogic`: macOS package that runs the app's store tests without the simulator.
-- `packages/`, `tools/`: the old Tauri/Lit app and its WebView automation tooling (reference only; see below).
+- `packages/`: the old Tauri/Lit app (reference only; see below).
 
 ## Prerequisites
 
@@ -89,42 +89,5 @@ From the repo root:
 
 From `packages/app`: `deno task build` (typecheck + vite build), `deno task tauri build` (bundle the app).
 
-### Simulator automation
-
-The app uses `WKWebView`, whose controls live in a separate accessibility process.
-The project’s `.xcodebuildmcp/config.yaml` selects `tools/axe-web`, an AXe adapter
-that enables remote content discovery. Agents can use ordinary `snapshot_ui`,
-`tap`, `type_text`, `swipe`, and `wait_for_ui` calls with element references.
-The adapter uses native accessibility to scroll tapped controls into view before
-sending input, including controls clipped by inner scroll areas. No app test hooks or JavaScript injection are needed.
-Native popovers expose a `dismiss popup` target whose tap area stays outside the
-popup, so agents can cancel the iOS share sheet through MCP.
-
-After installing Xcode, Deno, Node/npm, and an iOS simulator:
-
-```sh
-deno task setup:ios-testing
-```
-
-This installs the pinned XcodeBuildMCP tooling if needed and compiles a small
-snapshot helper against its existing frameworks. Private compile-time headers
-are downloaded from a pinned idb revision. Build files stay in the ignored
-`.xcodebuildmcp/cache/` directory; installed packages are not modified. Rerun setup
-after changing Xcode, relocating the npm cache, or editing the Swift helper.
-
-Start the Tauri bridge as described above, then build/run the app with MCP.
-Restart an already-running MCP server once so it reads the project configuration.
-For a different simulator, update `simulatorName` in the project configuration or
-use MCP’s session defaults.
-
-```sh
-deno task test:ios
-```
-
-The smoke test connects to a real MCP server, drives the installed simulator app,
-creates a library item and a kit, searches and packs a trip, verifies
-the native share sheet without sending anything, saved progress and archive state
-after restarting the app, reuses a trip with
-independent progress, checks reset confirmation and Undo across tabs, and removes
-its own test data. Existing lists are retained. If a test fails, it prints the unique suffix of any test data left
-for inspection. Keep the simulator free of manual input while this test runs.
+The old app's WebView simulator tooling (`tools/axe-web` and the `test:ios` smoke test)
+was removed; it was last present in commit `fafa22d`.

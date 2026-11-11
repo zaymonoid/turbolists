@@ -41,9 +41,6 @@ yarn-error.log*
 
 .playwright-mcp
 
-# Local simulator automation builds
-.xcodebuildmcp/cache
-
 # Swift / Xcode
 .build/
 .swiftpm/
