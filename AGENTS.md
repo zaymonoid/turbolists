@@ -1,7 +1,19 @@
 # Working on Turbolists
 
+## Rapid prototyping imperative
+
+We are RAPID prototyping:
+
+- No backwards compatibility
+- Move fast and break things
+- No app data is sacred
+- Velocity and continuous improvement and iteration are paramount
+
 This is a Tauri app with a Lit frontend, not a SwiftUI app. Domain logic lives in
 `packages/core`; UI and persistence integration live in `packages/app`.
+
+Use Conventional Commits for all commit messages (for example, `feat: add trip reuse`
+or `fix: preserve kit order`).
 
 ## iOS simulator
 
