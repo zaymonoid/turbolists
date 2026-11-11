@@ -17,9 +17,6 @@ struct TripDetailView: View {
     @State private var remainingOnly = false
     @State private var confirmingReset = false
     @State private var deleteAfterDismiss = false
-    /// Checked set the row order is frozen to, briefly, so a check reads before its row moves.
-    @State private var packingOrder: Set<ItemId>?
-    @State private var reorderTask: Task<Void, Never>?
     @State private var hapticTick = 0
     @State private var celebrate = 0
     @State private var lastToggled: ItemId?
@@ -29,9 +26,9 @@ struct TripDetailView: View {
     var body: some View {
         let progress = packProgress(trip, kits: kits)
         let complete = progress.total > 0 && progress.checked == progress.total
-        // A scroll view of our own cards rather than a List: the checklist animates
-        // its own reordering, and List fought it (section edges dipping during moves,
-        // and taps on tall rows scrolling instead of toggling).
+        // A scroll view of our own cards rather than a List: List's move animation
+        // made section edges dip during reorders, and taps on tall rows scrolled
+        // instead of toggling.
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 if trip.archived == true {
@@ -60,7 +57,6 @@ struct TripDetailView: View {
                     // Anchored here so the iOS 26 popover points at the button, not the screen.
                     .confirmationDialog("Start packing again?", isPresented: $confirmingReset, titleVisibility: .visible) {
                         Button("Reset", role: .destructive) {
-                            clearReorder()
                             store.send(.resetChecks(tripId: trip.id))
                         }
                     } message: {
@@ -74,6 +70,8 @@ struct TripDetailView: View {
             .padding(.horizontal, 16)
             .padding(.top, 4)
             .padding(.bottom, 24)
+            // Packed rows move straight away with the system's default timing.
+            .animation(reduceMotion ? nil : .default, value: trip.checked)
         }
         .scrollDismissesKeyboard(.immediately)
         .background(Theme.background.ignoresSafeArea())
@@ -92,7 +90,6 @@ struct TripDetailView: View {
         }) { kind in
             TripSettingsSheet(tripId: trip.id, mode: kind, toggleArchived: toggleArchived) { deleteAfterDismiss = true }
         }
-        .onDisappear { clearReorder() }
     }
 
     // MARK: Header
@@ -147,10 +144,9 @@ struct TripDetailView: View {
 
     @ViewBuilder private func checklist(_ progress: PackProgress) -> some View {
         let items = Dictionary(store.state.data.items.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let orderChecked = packingOrder ?? trip.checked
         let q = query.tripTrimmed.lowercased()
         let matches = { (id: ItemId) in q.isEmpty || (items[id]?.name ?? "").lowercased().contains(q) }
-        let shown = { (id: ItemId) in matches(id) && (!remainingOnly || !orderChecked.contains(id)) }
+        let shown = { (id: ItemId) in matches(id) && (!remainingOnly || !trip.checked.contains(id)) }
         let groups = checklistGroups(trip, kits: kits)
         let visibleCount = groups.reduce(0) { $0 + $1.ids.filter(shown).count }
 
@@ -162,7 +158,7 @@ struct TripDetailView: View {
             ) {
                 Button("Clear search") { query = "" }.fontWeight(.semibold)
             }
-        } else if progress.checked == progress.total && remainingOnly && q.isEmpty && packingOrder == nil {
+        } else if progress.checked == progress.total && remainingOnly && q.isEmpty {
             EmptyState(
                 symbol: "checkmark.seal.fill",
                 tint: Theme.moss,
@@ -174,7 +170,7 @@ struct TripDetailView: View {
             ForEach(groups) { group in
                 // Unpacked first, packed last, kit order preserved within each state.
                 let candidates = group.ids.filter(shown)
-                let visible = candidates.filter { !orderChecked.contains($0) } + candidates.filter { orderChecked.contains($0) }
+                let visible = candidates.filter { !trip.checked.contains($0) } + candidates.filter { trip.checked.contains($0) }
                 let packed = group.ids.filter { trip.checked.contains($0) }.count
                 if !visible.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
@@ -224,9 +220,11 @@ struct TripDetailView: View {
             .padding(.horizontal, 16)
             .frame(minHeight: 54)
             .contentShape(.rect)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.28), value: packed)
         }
         .buttonStyle(RowPressStyle())
+        // One layer per row, so a moving row travels as a unit. Without it SwiftUI
+        // animates the box, text and highlight separately and the row comes apart.
+        .drawingGroup()
         .accessibilityLabel(name)
         .accessibilityValue(packed ? "Packed" : "Not packed")
         .accessibilityAddTraits(packed ? [.isToggle, .isSelected] : .isToggle)
@@ -248,28 +246,12 @@ struct TripDetailView: View {
         }
     }
 
-    // MARK: Packing order
+    // MARK: Packing
 
     private func toggle(_ id: ItemId) {
-        // Checkmark, counters, persistence and haptic update now; rows move a beat later.
-        if packingOrder == nil { packingOrder = trip.checked }
         lastToggled = id
-        reorderTask?.cancel()
         store.send(.toggleChecked(tripId: trip.id, itemId: id))
         hapticTick += 1
-        reorderTask = Task { @MainActor in
-            // Long enough for the tick to draw on and the strike to sweep across.
-            try? await Task.sleep(for: .milliseconds(reduceMotion ? 80 : 260))
-            guard !Task.isCancelled else { return }
-            withAnimation(reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.15)) { packingOrder = nil }
-            reorderTask = nil
-        }
-    }
-
-    private func clearReorder() {
-        reorderTask?.cancel()
-        reorderTask = nil
-        packingOrder = nil
     }
 }
 

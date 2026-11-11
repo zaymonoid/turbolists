@@ -74,10 +74,11 @@ when the file list or `project.yml` changes.
   tabular digits for counters. Add colours and shared components there, not inline.
 - Keep lists keyed by domain ID.
 - The trip checklist is a custom `ScrollView` of cards, not a `List`: the stock
-  move animation made the card edge dip and rows overlap. The tick and
-  strike-through show immediately; the row moves to the bottom of its group after
-  260 ms (80 ms with Reduce Motion). Unchecking restores kit order. Cancel the
-  timer when leaving the screen; never delay the store action.
+  move animation made the card edge dip and rows overlap. Packing a row moves it to
+  the bottom of its group straight away with the system `.default` animation (none
+  with Reduce Motion); unchecking restores kit order. No custom delays or springs.
+  Each row is `.drawingGroup()`ed so it moves as one piece; keep animations inside a
+  row scoped (`.animation(_:body:)`) so they don't hijack its position.
 - Haptics: one light impact per packing toggle and a success haptic when the last
   item is packed, via `.sensoryFeedback` in the views. Do not add others. A
   simulator cannot confirm the feel; check on a real iPhone before claiming it.

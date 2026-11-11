@@ -249,22 +249,24 @@ struct CheckBox: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // Animations are scoped to the box's own look, so when its row moves the box
+        // moves with the row's animation instead of its own spring.
+        let pop: Animation? = reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.45)
+        let fade: Animation? = reduceMotion ? nil : .easeInOut(duration: 0.4)
         ZStack {
             Circle()
-                .strokeBorder(checked ? tint : Theme.inkFaint, lineWidth: 1.6)
+                .strokeBorder(lineWidth: 1.6)
+                .animation(fade) { $0.foregroundStyle(checked ? tint : Theme.inkFaint) }
             Circle()
-                .fill(tint)
-                .scaleEffect(checked ? 1 : 0.4)
-                .opacity(checked ? 1 : 0)
+                .animation(fade) { $0.foregroundStyle(tint) }
+                .animation(pop) { $0.scaleEffect(checked ? 1 : 0.4).opacity(checked ? 1 : 0) }
             Image(systemName: "checkmark")
                 .font(.system(size: size * 0.48, weight: .bold))
-                .foregroundStyle(tint == Theme.moss ? Theme.onMoss : .white)
+                .animation(fade) { $0.foregroundStyle(tint == Theme.moss ? Theme.onMoss : .white) }
                 .symbolEffect(.drawOff, options: reduceMotion ? .speed(4) : .default, isActive: !checked)
-                .opacity(checked ? 1 : 0)
+                .animation(pop) { $0.opacity(checked ? 1 : 0) }
         }
         .frame(width: size, height: size)
-        .animation(reduceMotion ? nil : .spring(duration: 0.3, bounce: 0.45), value: checked)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: tint)
         .accessibilityHidden(true)
     }
 }
