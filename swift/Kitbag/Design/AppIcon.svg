@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="b-bg" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#242B1E"/>
+      <stop offset="1" stop-color="#10120F"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#b-bg)"/>
+  <g transform="rotate(12 512 540)">
+    <!-- gathered top above the cord -->
+    <path d="M404 322 C396 266 372 226 348 180 Q402 218 456 186 Q512 152 568 186 Q622 218 676 180 C652 226 628 266 620 322 Z" fill="#84B562"/>
+    <!-- tall body -->
+    <path d="M404 322 C344 340 316 380 316 432 V752 Q316 868 432 868 H592 Q708 868 708 752 V432 C708 380 680 340 620 322 Z" fill="#9DCB7A"/>
+    <!-- base panel seam -->
+    <path d="M316 744 H708" stroke="#6F9A52" stroke-width="14"/>
+    <!-- cord with a hanging end -->
+    <path d="M628 322 C700 350 716 410 694 468" fill="none" stroke="#F1F2EA" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="692" cy="478" r="24" fill="#F1F2EA"/>
+    <path d="M384 322 H640" stroke="#F1F2EA" stroke-width="30" stroke-linecap="round"/>
+  </g>
+  <!-- tick, kept upright -->
+  <path d="M400 560 L470 630 L590 490" fill="none" stroke="#10120F" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

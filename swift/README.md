@@ -1,9 +1,9 @@
-# Turbolists (SwiftUI)
+# Kitbag (SwiftUI)
 
-- `TurbolistsCore/` — Swift package: pure domain logic ported from `packages/core`.
-- `Turbolists/` — SwiftUI iOS app (XcodeGen `project.yml`). Bundle ID `com.turbolists.swiftui`. iOS 26+.
-- `AppLogic/` — macOS-only SwiftPM wrapper that symlinks `Turbolists/Sources/Store` (as module
-  `Turbolists`) and `Turbolists/Tests`, so the app's store tests run with `swift test`, without the simulator.
+- `KitbagCore/` — Swift package: pure domain logic ported from `packages/core`.
+- `Kitbag/` — SwiftUI iOS app (XcodeGen `project.yml`). Bundle ID `com.kitbag.swiftui`. iOS 26+.
+- `AppLogic/` — macOS-only SwiftPM wrapper that symlinks `Kitbag/Sources/Store` (as module
+  `Kitbag`) and `Kitbag/Tests`, so the app's store tests run with `swift test`, without the simulator.
 
 State management: [ObservableStore](https://github.com/subconsciousnetwork/ObservableStore) (Elm-style store, Combine effects).
 
@@ -15,13 +15,13 @@ State management: [ObservableStore](https://github.com/subconsciousnetwork/Obser
 ./dev.sh launch     # reinstall + relaunch the last build
 ./dev.sh test       # app store tests (16) + core tests (142) on macOS, in parallel, ~1s warm
 ./dev.sh test-app   # app store tests only (macOS)
-./dev.sh test-core  # TurbolistsCore tests only (macOS)
+./dev.sh test-core  # KitbagCore tests only (macOS)
 ./dev.sh test-sim   # app tests on the iOS simulator (authoritative, ~4.5s warm)
 ```
 
 - `SIM=<udid|name>` picks the simulator (default `iPhone 17 Pro`; booted if needed). When several
   agents work at once, give each one its own simulator **and** `DERIVED_DATA=<path>` (default
-  `Turbolists/.build/dd`); parallel xcodebuilds on one derived-data folder block each other.
+  `Kitbag/.build/dd`); parallel xcodebuilds on one derived-data folder block each other.
 - Output is quiet (warnings, errors, test summary) and ends with per-phase timings.
   `VERBOSE=1` shows full xcodebuild / swift test output.
 - Use `test` while iterating; run `test-sim` before handing off, since `test` runs on macOS.

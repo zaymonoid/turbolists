@@ -5,20 +5,20 @@
 #   ./dev.sh run        build, install, and relaunch on the simulator
 #   ./dev.sh launch     relaunch the last build without building
 #   ./dev.sh test       app store tests + core tests on macOS (swift test, parallel)
-#   ./dev.sh test-app   app store tests (Turbolists/Tests) on macOS
-#   ./dev.sh test-core  TurbolistsCore tests on macOS
+#   ./dev.sh test-app   app store tests (Kitbag/Tests) on macOS
+#   ./dev.sh test-core  KitbagCore tests on macOS
 #   ./dev.sh test-sim   app tests on the iOS simulator (xcodebuild test)
-#   ./dev.sh gen        regenerate Turbolists.xcodeproj (skipped when unchanged)
+#   ./dev.sh gen        regenerate Kitbag.xcodeproj (skipped when unchanged)
 #
 # Env: SIM=<udid|name> (default: booted "iPhone 17 Pro"),
-#      DERIVED_DATA=<path> (default: Turbolists/.build/dd), VERBOSE=1.
+#      DERIVED_DATA=<path> (default: Kitbag/.build/dd), VERBOSE=1.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_DIR="$ROOT/Turbolists"
+APP_DIR="$ROOT/Kitbag"
 DD="${DERIVED_DATA:-$APP_DIR/.build/dd}"
-BUNDLE_ID="com.turbolists.swiftui"
-APP_PATH="$DD/Build/Products/Debug-iphonesimulator/Turbolists.app"
+BUNDLE_ID="com.kitbag.swiftui"
+APP_PATH="$DD/Build/Products/Debug-iphonesimulator/Kitbag.app"
 
 now() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
 T0=$(now)
@@ -49,7 +49,7 @@ gen() {
   phase_start
   cd "$APP_DIR"
   # --use-cache skips generation unless project.yml or the file list changed.
-  if [[ -d Turbolists.xcodeproj ]]; then
+  if [[ -d Kitbag.xcodeproj ]]; then
     xcodegen generate --quiet --use-cache
   else
     xcodegen generate --quiet
@@ -63,7 +63,7 @@ xcb() {
   local action="$1"; shift
   local quiet=(-quiet)
   [[ -n "${VERBOSE:-}" ]] && quiet=()
-  xcodebuild -project "$APP_DIR/Turbolists.xcodeproj" -scheme Turbolists \
+  xcodebuild -project "$APP_DIR/Kitbag.xcodeproj" -scheme Kitbag \
     -configuration Debug -destination "id=$UDID" -derivedDataPath "$DD" \
     ${quiet[@]+"${quiet[@]}"} COMPILER_INDEX_STORE_ENABLE=NO "$@" "$action"
 }
@@ -106,12 +106,12 @@ case "$cmd" in
   build) build ;;
   run) build; launch ;;
   launch) launch ;;
-  test-core) phase_start; spm_test "$ROOT/TurbolistsCore" core; phase_end test-core ;;
+  test-core) phase_start; spm_test "$ROOT/KitbagCore" core; phase_end test-core ;;
   test-app) phase_start; spm_test "$ROOT/AppLogic" app; phase_end test-app ;;
   test)
     phase_start
     spm_test "$ROOT/AppLogic" app & app=$!
-    spm_test "$ROOT/TurbolistsCore" core & core=$!
+    spm_test "$ROOT/KitbagCore" core & core=$!
     status=0
     wait $app || status=1
     wait $core || status=1

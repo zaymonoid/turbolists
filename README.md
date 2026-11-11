@@ -1,13 +1,13 @@
-# turbolists
+# kitbag
 
 A packing-list app. Define items, group them into kits (e.g. "beach", "cold weather"), and combine kits into trips to get a checklist. Add items to your library, reuse trips with a fresh checklist, and archive past trips while keeping their progress.
 
-Turbolists is a native **SwiftUI** iOS app, in [`swift/`](swift/). The original Tauri/Lit app in `packages/` is kept for reference only and is no longer developed.
+Kitbag is a native **SwiftUI** iOS app, in [`swift/`](swift/). The original Tauri/Lit app in `packages/` is kept for reference only and is no longer developed.
 
 ## Layout
 
-- `swift/TurbolistsCore`: domain logic (items, kits, trips, library, checklist helpers) as a Swift package.
-- `swift/Turbolists`: the SwiftUI app. State lives in an [ObservableStore](https://github.com/subconsciousnetwork/ObservableStore) store; data is saved as JSON in Application Support.
+- `swift/KitbagCore`: domain logic (items, kits, trips, library, checklist helpers) as a Swift package.
+- `swift/Kitbag`: the SwiftUI app. State lives in an [ObservableStore](https://github.com/subconsciousnetwork/ObservableStore) store; data is saved as JSON in Application Support.
 - `swift/AppLogic`: macOS package that runs the app's store tests without the simulator.
 - `packages/`: the old Tauri/Lit app (reference only; see below).
 
@@ -31,7 +31,7 @@ cd swift
 | `./dev.sh test`     | Core and store tests on macOS                        |
 | `./dev.sh test-sim` | App tests on the iOS simulator                       |
 
-`SIM=<name|udid>` picks the simulator (default `iPhone 17 Pro`). More detail, including build timings, is in [`swift/README.md`](swift/README.md). To open the project in Xcode, run `./dev.sh gen` and open `swift/Turbolists/Turbolists.xcodeproj`.
+`SIM=<name|udid>` picks the simulator (default `iPhone 17 Pro`). More detail, including build timings, is in [`swift/README.md`](swift/README.md). To open the project in Xcode, run `./dev.sh gen` and open `swift/Kitbag/Kitbag.xcodeproj`.
 
 ## Reference: the Tauri/Lit app
 

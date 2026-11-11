@@ -1,4 +1,4 @@
-# Working on Turbolists
+# Working on Kitbag
 
 ## Rapid prototyping imperative
 
@@ -14,18 +14,18 @@ or `fix: preserve kit order`).
 
 ## The app is SwiftUI
 
-Turbolists is a native SwiftUI iOS app in `swift/`. All new work goes there.
+Kitbag is a native SwiftUI iOS app in `swift/`. All new work goes there.
 
 The original Tauri/Lit app in `packages/` is kept **for reference only**: read it
 to check how something used to behave, but do not add features or fix bugs there,
 and do not keep the two in sync. Notes for running the old app are in
 `packages/AGENTS.md`.
 
-- `swift/TurbolistsCore/`: Swift package with the pure domain logic (items, kits,
+- `swift/KitbagCore/`: Swift package with the pure domain logic (items, kits,
   trips, `Library`, checklist/progress helpers) and its tests. Free functions that
   `throw InvariantViolation`.
-- `swift/Turbolists/`: the iOS app. XcodeGen `project.yml` (the `.xcodeproj` is
-  generated and ignored), bundle ID `com.turbolists.swiftui`, iOS 26+, Swift 6.
+- `swift/Kitbag/`: the iOS app. XcodeGen `project.yml` (the `.xcodeproj` is
+  generated and ignored), bundle ID `com.kitbag.swiftui`, iOS 26+, Swift 6.
   - `Sources/Store/`: `AppModel`, `AppAction`, `AppEnvironment`, persistence, built
     on [ObservableStore](https://github.com/subconsciousnetwork/ObservableStore)
     with Combine effects.
@@ -56,7 +56,7 @@ when the file list or `project.yml` changes.
 - `withAnimation { store.send(...) }` does **not** animate: ObservableStore applies
   an empty transaction. Animate with `.animation(_:value:)` on the views.
 - `Sources/Store/` must import only Foundation, Combine, OSLog, ObservableStore and
-  TurbolistsCore. Importing SwiftUI or UIKit there breaks `dev.sh test` on macOS.
+  KitbagCore. Importing SwiftUI or UIKit there breaks `dev.sh test` on macOS.
 - Saves are debounced 500 ms and run on one serial queue so they land in order.
   Nothing is written before loading has finished, and a failed load never
   overwrites the file. The JSON format matches the old app's `store.json`.

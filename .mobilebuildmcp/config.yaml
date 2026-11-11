@@ -1,7 +1,7 @@
 schemaVersion: 1
 sessionDefaults:
-  projectPath: ./swift/Turbolists/Turbolists.xcodeproj
-  scheme: Turbolists
+  projectPath: ./swift/Kitbag/Kitbag.xcodeproj
+  scheme: Kitbag
   configuration: Debug
   simulatorName: iPhone 17 Pro
-  bundleId: com.turbolists.swiftui
+  bundleId: com.kitbag.swiftui
