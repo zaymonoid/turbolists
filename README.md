@@ -50,7 +50,6 @@ From the repo root:
 | `deno task dev`      | Run the desktop app in dev mode  |
 | `deno task dev:ios`  | Run on the iOS simulator         |
 | `deno task test`     | Run core and app state tests     |
-| `deno task test:ui`  | Verify motion and haptic dispatch in mobile WebKit |
 | `deno task typecheck`| Typecheck core                   |
 
 From `packages/app`: `deno task build` (typecheck + vite build), `deno task tauri build` (bundle the app).

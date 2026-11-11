@@ -96,10 +96,6 @@ do not patch installed npm packages or rely on a live Node inspector override.
   context with mocked Tauri `read_store`/`write_store` calls. Use `locator.tap()`
   with touch-enabled WebKit; mouse `click()` can report spurious interception.
   These fixtures must never replace the real simulator's store.
-- `deno task test:ui` runs the repeatable WebKit checks for list motion, keyed row
-  identity, kit expansion, animated counters, reduced motion, and haptic command
-  dispatch. Keep Vite running on port 1420 (or set `TURBOLISTS_UI_URL`). If WebKit
-  is missing, install it with `deno run -A npm:playwright-core@1.65.0 install webkit`.
 
 ## Motion and haptics
 
