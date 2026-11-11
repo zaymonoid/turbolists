@@ -102,8 +102,9 @@ setup step is needed. The same tools are available from the shell as
 - Use current `elementRef`s; refresh the snapshot after navigation, scrolling or
   sheet changes.
 - Row actions (delete, archive, rename, pack again) are swipe actions and context
-  menus: `long_press` the row, then tap the menu item. Kit item rows have no
-  context menu (long press drags to reorder); remove them by swiping.
+  menus: `long_press` the row, then tap the menu item. The kit item list is
+  always in edit mode, so the system grip drags immediately; that turns swipe
+  actions off, so kit items are removed from the context menu.
 - What AXe sees is not exactly what VoiceOver reads. AXe lists the children of
   combined and `accessibilityHidden` views, and it does not report traits. Put
   state that matters (packed, in this trip) in `accessibilityValue`, not only

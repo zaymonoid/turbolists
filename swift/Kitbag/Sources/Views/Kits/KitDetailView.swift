@@ -2,7 +2,7 @@ import ObservableStore
 import SwiftUI
 import KitbagCore
 
-/// One kit's screen: its items (drag to reorder, swipe to remove) and an
+/// One kit's screen: its items (drag the grip to reorder, long-press to remove) and an
 /// add-or-create field with library suggestions.
 struct KitDetailView: View {
     @EnvironmentObject var store: Store<AppModel>
@@ -89,6 +89,8 @@ struct KitDetailView: View {
                 }
             }
             .themedScreen()
+            // Always editing: the system reorder grip drags straight away, with no long press.
+            .environment(\.editMode, .constant(.active))
             .animation(reduceMotion ? nil : .default, value: kit.itemIds)
             .animation(reduceMotion ? nil : .default, value: query)
             .onChange(of: kit.itemIds.count) { old, new in
@@ -141,20 +143,16 @@ struct KitDetailView: View {
                 }
             }
             Spacer(minLength: 0)
-            // Hint that rows can be lifted and reordered (the original's grip).
-            Image(systemName: "line.3.horizontal")
-                .font(.subheadline)
-                .foregroundStyle(Theme.inkFaint.opacity(0.7))
-                .accessibilityHidden(true)
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
-        .swipeActions(edge: .trailing) {
-            Button("Remove", systemImage: "minus.circle", role: .destructive, action: remove)
-                .tint(.red)
+        // The list is always editing (for the drag grip), which turns swipe actions
+        // off, so Remove lives in the context menu.
+        .contextMenu {
+            Button("Remove from Kit", systemImage: "minus.circle", role: .destructive, action: remove)
         }
-        // No context menu here: long-press belongs to drag-to-reorder.
         .accessibilityActions {
+            Button("Remove from Kit", action: remove)
             if let index = kit.itemIds.firstIndex(of: id) {
                 if index > 0 {
                     Button("Move up") { store.send(.moveItemInKit(kitId: kit.id, itemId: id, toIndex: index - 1)) }
