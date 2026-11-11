@@ -183,10 +183,32 @@ export class TripsView extends LitElement {
         margin: auto auto 0;
         box-shadow: 0 -20px 80px #0006;
         overflow-y: auto;
+        animation: sheet-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1);
       }
       dialog.sheet::backdrop {
         background: #0009;
         backdrop-filter: blur(5px);
+        animation: backdrop-in 280ms ease;
+      }
+      dialog.sheet:focus-visible,
+      dialog.sheet :focus:not(:focus-visible) {
+        outline: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        dialog.sheet,
+        dialog.sheet::backdrop {
+          animation: none;
+        }
+      }
+      @keyframes sheet-in {
+        from {
+          transform: translateY(100%);
+        }
+      }
+      @keyframes backdrop-in {
+        from {
+          opacity: 0;
+        }
       }
       .sheet-handle {
         width: 34px;
@@ -197,8 +219,10 @@ export class TripsView extends LitElement {
       }
       .sheet-nav {
         display: flex;
-        justify-content: flex-end;
-        margin: 0 -8px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 6px -8px 0 0;
       }
       .sheet-nav button {
         color: var(--accent);
@@ -210,8 +234,8 @@ export class TripsView extends LitElement {
         font-weight: 600;
       }
       dialog.sheet h2 {
-        margin: 8px 0 6px;
-        font-size: 27px;
+        margin: 0;
+        font-size: 24px;
         letter-spacing: -0.03em;
         overflow-wrap: anywhere;
       }
@@ -366,7 +390,12 @@ export class TripsView extends LitElement {
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>(
       "dialog.sheet",
     );
-    if (dialog && !dialog.open) dialog.showModal();
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      // showModal focuses the first control (Done) and paints its focus ring;
+      // focus the sheet itself so nothing looks pre-selected.
+      dialog.focus();
+    }
   }
 
   private closeSheet() {
@@ -981,6 +1010,7 @@ export class TripsView extends LitElement {
     return html`
       <dialog
         class="sheet"
+        tabindex="-1"
         aria-labelledby="sheet-title"
         @close=${this.closeSheet}
         @click=${(e: MouseEvent) => {
@@ -996,6 +1026,9 @@ export class TripsView extends LitElement {
       >
         <div class="sheet-handle" aria-hidden="true"></div>
         <div class="sheet-nav">
+          <h2 id="sheet-title">${setup
+            ? "What kind of trip?"
+            : "Trip settings"}</h2>
           <button
             @click=${(e: Event) =>
               (e.currentTarget as HTMLElement).closest("dialog")!.close()}
@@ -1003,9 +1036,6 @@ export class TripsView extends LitElement {
             Done
           </button>
         </div>
-        <h2 id="sheet-title">${setup
-          ? "What kind of trip?"
-          : "Trip settings"}</h2>
         ${setup ? null : html`<label for="trip-name">Name</label><input
               id="trip-name"
               aria-label="Trip name"
