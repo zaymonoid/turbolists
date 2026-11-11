@@ -15,6 +15,7 @@ import {
 } from "@turbolists/core/views";
 import type { ItemId } from "@turbolists/core/ids";
 import { icon, navigate, showDialog, viewStyles } from "./ui.ts";
+import { dismissSheet, presentSheet } from "./sheet.ts";
 import { shareChecklist } from "../share.ts";
 
 @customElement("trips-view")
@@ -167,32 +168,16 @@ export class TripsView extends LitElement {
         margin: auto auto 0;
         box-shadow: 0 -20px 80px #0006;
         overflow-y: auto;
-        animation: sheet-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1);
+        overscroll-behavior: contain;
       }
       dialog.sheet::backdrop {
         background: #0009;
         backdrop-filter: blur(5px);
-        animation: backdrop-in 280ms ease;
+        opacity: var(--sheet-progress, 1);
       }
       dialog.sheet:focus-visible,
       dialog.sheet :focus:not(:focus-visible) {
         outline: none;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        dialog.sheet,
-        dialog.sheet::backdrop {
-          animation: none;
-        }
-      }
-      @keyframes sheet-in {
-        from {
-          transform: translateY(100%);
-        }
-      }
-      @keyframes backdrop-in {
-        from {
-          opacity: 0;
-        }
       }
       .sheet-handle {
         width: 34px;
@@ -257,7 +242,7 @@ export class TripsView extends LitElement {
         overflow-wrap: anywhere;
       }
       .kit-toggle.active {
-        background: #d4ff3a16;
+        background: var(--accent-wash);
         color: var(--accent);
         border-color: var(--accent-dim);
       }
@@ -319,7 +304,7 @@ export class TripsView extends LitElement {
       }
       .check-row.checked .checkbox {
         background: var(--accent);
-        color: var(--bg);
+        color: var(--on-accent);
         border-color: var(--accent);
       }
       .check-row.checked .check-name {
@@ -375,7 +360,7 @@ export class TripsView extends LitElement {
       "dialog.sheet",
     );
     if (dialog && !dialog.open) {
-      dialog.showModal();
+      presentSheet(dialog);
       // showModal focuses the first control (Done) and paints its focus ring;
       // focus the sheet itself so nothing looks pre-selected.
       dialog.focus();
@@ -1005,7 +990,12 @@ export class TripsView extends LitElement {
             e.target === dialog &&
             (e.clientY < r.top || e.clientY > r.bottom ||
               e.clientX < r.left || e.clientX > r.right)
-          ) dialog.close();
+          ) dismissSheet(dialog);
+        }}
+        @cancel=${(e: Event) => {
+          // Escape or a drag past the threshold: slide away instead of vanishing.
+          e.preventDefault();
+          dismissSheet(e.currentTarget as HTMLDialogElement);
         }}
       >
         <div class="sheet-handle" aria-hidden="true"></div>
@@ -1015,7 +1005,9 @@ export class TripsView extends LitElement {
             : "Trip settings"}</h2>
           <button
             @click=${(e: Event) =>
-              (e.currentTarget as HTMLElement).closest("dialog")!.close()}
+              dismissSheet(
+                (e.currentTarget as HTMLElement).closest("dialog")!,
+              )}
           >
             Done
           </button>

@@ -1,4 +1,5 @@
 import { css, html, render } from "lit";
+import { dismissSheet, presentSheet } from "./sheet.ts";
 
 export const icon = (name: string) => {
   const paths: Record<string, string> = {
@@ -44,6 +45,7 @@ export const viewStyles = css`
   }
   * {
     box-sizing: border-box;
+    touch-action: manipulation;
   }
   button,
   input {
@@ -94,7 +96,7 @@ export const viewStyles = css`
     height: 46px;
     border-radius: 50%;
     background: var(--accent);
-    color: var(--bg);
+    color: var(--on-accent);
     border: 0;
     display: grid;
     place-items: center;
@@ -183,7 +185,7 @@ export const viewStyles = css`
     min-height: 48px;
     padding: 12px 20px;
     background: var(--accent);
-    color: var(--bg);
+    color: var(--on-accent);
     border: 0;
     border-radius: 14px;
     font-weight: 650;
@@ -355,13 +357,16 @@ export function showDialog(options: DialogOptions): Promise<string | null> {
       dialog.style.bottom = `${keyboardInset}px`;
       dialog.style.maxHeight = `${Math.max(160, viewport.height - 24)}px`;
     };
+    let finished = false;
     const finish = (value: string | null) => {
+      if (finished) return;
+      finished = true;
       viewport?.removeEventListener("resize", positionSheet);
       viewport?.removeEventListener("scroll", positionSheet);
-      dialog.close();
-      dialog.remove();
+      // Resolve now so the action applies while the sheet slides away.
       dialogOpen = false;
       resolve(value);
+      dismissSheet(dialog, () => dialog.remove());
     };
     render(
       html`
@@ -424,8 +429,8 @@ export function showDialog(options: DialogOptions): Promise<string | null> {
       }
     });
     document.body.append(dialog);
-    dialog.showModal();
     positionSheet();
+    presentSheet(dialog);
     viewport?.addEventListener("resize", positionSheet);
     viewport?.addEventListener("scroll", positionSheet);
     if (isInput) {

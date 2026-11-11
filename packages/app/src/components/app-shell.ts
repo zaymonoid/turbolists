@@ -20,6 +20,7 @@ export class AppShell extends LitElement {
     }
     * {
       box-sizing: border-box;
+      touch-action: manipulation;
     }
     .content {
       flex: 1;

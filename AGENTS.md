@@ -109,6 +109,11 @@ do not patch installed npm packages or rely on a live Node inspector override.
   The checkmark and haptic update immediately; wait 80 ms before changing row
   order so the check reads first. Keep this delay local to the UI, cancel its
   timer when leaving the view, and do not delay the store action or persistence.
+- Bottom sheets (`<dialog>`) open and close through `presentSheet`/`dismissSheet`
+  in `components/sheet.ts`, which add the spring, swipe-down-to-dismiss, and
+  backdrop fade (`--sheet-progress`, inherited by `::backdrop`). Do not call
+  `showModal()`/`close()` directly. A swipe dismissal fires the dialog's
+  `cancel` event, so handle `cancel` by calling `dismissSheet`.
 - `animated-number.ts` supplies packing counters. Reset counters when switching
   trips so values do not animate from a different trip's progress.
 - Respect `prefers-reduced-motion` in JavaScript as well as CSS: CSS rules alone

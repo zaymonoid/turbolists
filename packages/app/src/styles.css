@@ -7,8 +7,13 @@
   --ink: #f1f3eb;
   --ink-dim: #a5af9c;
   --ink-faint: #8c9783;
-  --accent: #d4ff3a;
-  --accent-dim: #7a8f1f;
+  /* iOS system tint (systemBlue, dark appearance) when AccentColor is unavailable. */
+  --accent-base: #0a84ff;
+  --accent-chroma: 0.75;
+  --accent: var(--accent-base);
+  --on-accent: #ffffff;
+  --accent-dim: color-mix(in srgb, var(--accent) 55%, var(--bg));
+  --accent-wash: color-mix(in srgb, var(--accent) 10%, transparent);
   --warn: #ff8a78;
   --font-display: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   font-family: var(--font-display);
@@ -17,8 +22,22 @@
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
 }
+/* Follow the platform accent: the app tint on iOS, the user's accent on macOS. */
+@supports (color: AccentColor) {
+  :root {
+    --accent-base: AccentColor;
+    --on-accent: AccentColorText;
+  }
+}
+/* Soften the system accent by scaling its chroma while keeping hue and lightness. */
+@supports (color: oklch(from red l c h)) {
+  :root {
+    --accent: oklch(from var(--accent-base) l calc(c * var(--accent-chroma)) h);
+  }
+}
 * {
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 html,
 body {
@@ -49,10 +68,13 @@ button {
   max-height: 90dvh;
   margin: auto auto 0;
   box-shadow: 0 -20px 80px #0006;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .app-dialog::backdrop {
   background: #0009;
   backdrop-filter: blur(5px);
+  opacity: var(--sheet-progress, 1);
 }
 .sheet-handle {
   width: 34px;
