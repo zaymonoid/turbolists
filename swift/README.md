@@ -26,7 +26,7 @@ State management: [ObservableStore](https://github.com/subconsciousnetwork/Obser
   `VERBOSE=1` shows full xcodebuild / swift test output.
 - Use `test` while iterating; run `test-sim` before handing off, since `test` runs on macOS.
 - `run` and `test-sim` share build settings, so switching between them does not rebuild.
-  Building the same derived data from Xcode or XcodeBuildMCP with different settings (e.g. the index
+  Building the same derived data from Xcode or MobileBuildMCP with different settings (e.g. the index
   store on) recompiles ~1s worth on the next switch.
 
 ## Measurements

@@ -88,12 +88,17 @@ when the file list or `project.yml` changes.
 
 ## Simulator verification
 
-Use XcodeBuildMCP (`snapshot_ui`, `tap`, `type_text`, `long_press`, `swipe`,
-`screenshot`); defaults are in `.xcodebuildmcp/config.yaml`.
+Use MobileBuildMCP (formerly XcodeBuildMCP), pinned to `mobilebuildmcp@2.7.1`
+with the `simulator` and `ui-automation` workflows. Project defaults are in
+`.mobilebuildmcp/config.yaml`. It drives the simulator with its bundled AXe; no
+setup step is needed. The same tools are available from the shell as
+`npx -y mobilebuildmcp@2.7.1 ui-automation <tool> --simulator-id <udid>`.
 
-- The config still routes input through `tools/axe-web`, the old WebView adapter.
-  It passes native controls through unchanged but needs its helper compiled once
-  per checkout: `deno task setup:ios-testing`.
+- Keep round trips down: tap and type actions return a compact snapshot, so
+  read that instead of calling `snapshot_ui` again; use `batch` for several taps
+  on one screen; use `wait_for_ui` instead of sleeping; pass `sinceScreenHash`
+  to skip a snapshot when nothing changed. Prefer snapshots to screenshots
+  except for visual checks.
 - Use current `elementRef`s; refresh the snapshot after navigation, scrolling or
   sheet changes.
 - Row actions (delete, archive, pack again, remove from kit) are swipe actions and

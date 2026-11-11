@@ -1,5 +1,4 @@
 schemaVersion: 1
-axePath: ./tools/axe-web
 sessionDefaults:
   projectPath: ./swift/Turbolists/Turbolists.xcodeproj
   scheme: Turbolists
