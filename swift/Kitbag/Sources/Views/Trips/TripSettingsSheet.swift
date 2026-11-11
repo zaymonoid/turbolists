@@ -15,6 +15,7 @@ struct TripSettingsSheet: View {
 
     @State private var name = ""
     @State private var confirmingDelete = false
+    @State private var prompt: TextPrompt?
     @FocusState private var nameFocused: Bool
 
     private var trip: Trip? { store.state.data.trips.first { $0.id == tripId } }
@@ -76,6 +77,7 @@ struct TripSettingsSheet: View {
                 }
             }
         }
+        .textPrompt($prompt)
         .presentationDetents(setup ? [.medium, .large] : [.large])
         .presentationDragIndicator(.visible)
         .onAppear { name = trip?.name ?? "" }
@@ -91,8 +93,14 @@ struct TripSettingsSheet: View {
                     .foregroundStyle(Theme.inkDim)
                     .sheetRow()
                 Button("Create a kit", systemImage: "plus") {
-                    dismiss()
-                    store.send(.setView(.kits))
+                    prompt = .newKit { name in
+                        let id = newKitId()
+                        store.send(.createKit(id: id, name: name))
+                        store.send(.addKitToTrip(tripId: trip.id, kitId: id))
+                        dismiss()
+                        store.send(.setView(.kits))
+                        store.send(.selectKit(id))
+                    }
                 }
                 .fontWeight(.semibold)
                 .sheetRow()

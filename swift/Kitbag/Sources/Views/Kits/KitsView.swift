@@ -118,13 +118,7 @@ struct KitsView: View {
     }
 
     private func add() {
-        prompt = TextPrompt(
-            title: "New kit",
-            message: "A kit is a reusable group of items, like Essentials, Beach, or Cold weather.",
-            placeholder: "e.g. Essentials",
-            initial: query.trimmed,
-            confirm: "Add"
-        ) { name in
+        prompt = .newKit(initial: query.trimmed) { name in
             let id = newKitId()
             store.send(.createKit(id: id, name: name))
             query = ""
@@ -223,6 +217,17 @@ private struct KitCard: View {
 // MARK: - Shared kit prompts (list context menu and detail screen)
 
 extension TextPrompt {
+    static func newKit(initial: String = "", onSubmit: @escaping (String) -> Void) -> TextPrompt {
+        TextPrompt(
+            title: "New kit",
+            message: "A kit is a reusable group of items, like Essentials, Beach, or Cold weather.",
+            placeholder: "e.g. Essentials",
+            initial: initial,
+            confirm: "Add",
+            onSubmit: onSubmit
+        )
+    }
+
     @MainActor
     static func renameKit(_ kit: Kit, store: Store<AppModel>) -> TextPrompt {
         TextPrompt(title: "Rename kit", initial: kit.name) { name in
