@@ -9,125 +9,99 @@ We are RAPID prototyping:
 - No app data is sacred
 - Velocity and continuous improvement and iteration are paramount
 
-This is a Tauri app with a Lit frontend, not a SwiftUI app. Domain logic lives in
-`packages/core`; UI and persistence integration live in `packages/app`.
-
 Use Conventional Commits for all commit messages (for example, `feat: add trip reuse`
 or `fix: preserve kit order`).
 
-## iOS simulator
+## The app is SwiftUI
 
-Use XcodeBuildMCP to build, launch, inspect, and interact with the installed app.
-Project defaults are in `.xcodebuildmcp/config.yaml`.
+Turbolists is a native SwiftUI iOS app in `swift/`. All new work goes there.
 
-- Run `deno task setup:ios-testing` once per checkout/toolchain. This compiles the
-  WebView accessibility helper in `.xcodebuildmcp/cache/`.
-- Keep `PATH="$HOME/.cargo/bin:$PATH" deno task tauri ios dev --open --no-watch`
-  running from `packages/app` while building with MCP. It supplies Tauri's build
-  bridge and the Vite dev server.
-- Read MCP session defaults before building. Use `app_iOS` on an iOS simulator.
-  The Xcode build environment must include `cargo` and `deno` on PATH.
-- `tools/axe-web` exposes WebView controls to normal MCP tools. Use current
-  `elementRef`s from `snapshot_ui`, `wait_for_ui`, or a successful action's
-  refreshed snapshot. Refresh after navigation or scrolling; never reuse stale refs.
-- Wait for a known control after launch; the webview initially has an empty tree.
-  Narrow assertions by role/label if text appears in both a label and a button.
-- Run `deno task test:ios` against the installed app for a real MCP smoke test.
-  It creates uniquely named test data, checks persistence across an app restart,
-  and removes its own data on success. Do not reset the simulator or replace the
-  user's store for testing.
+The original Tauri/Lit app in `packages/` and its WebView tooling in `tools/` are
+kept **for reference only**: read them to check how something used to behave, but
+do not add features or fix bugs there, and do not keep the two in sync. Notes for
+running the old app are in `packages/AGENTS.md`.
 
-## MCP interaction fixes
+- `swift/TurbolistsCore/`: Swift package with the pure domain logic (items, kits,
+  trips, `Library`, checklist/progress helpers) and its tests. Free functions that
+  `throw InvariantViolation`.
+- `swift/Turbolists/`: the iOS app. XcodeGen `project.yml` (the `.xcodeproj` is
+  generated and ignored), bundle ID `com.turbolists.swiftui`, iOS 26+, Swift 6.
+  - `Sources/Store/`: `AppModel`, `AppAction`, `AppEnvironment`, persistence, built
+    on [ObservableStore](https://github.com/subconsciousnetwork/ObservableStore)
+    with Combine effects.
+  - `Sources/Views/`: `Shell/`, `Trips/`, `Kits/`, `Items/`, and `Shared/`
+    (`Theme.swift` holds the palette, type, cards, chips and other shared pieces).
+- `swift/AppLogic/`: macOS-only package that symlinks `Sources/Store` and `Tests`
+  so the store tests run with `swift test`, without the simulator.
 
-The frontend is a WKWebView. Its controls live in a separate accessibility
-process; the bundled AXe traversal originally returned no actionable web
-controls. `tools/axe-web` is the project's adapter, selected by `axePath` in
-`.xcodebuildmcp/config.yaml`. Restart MCP after changing its configuration;
-do not patch installed npm packages or rely on a live Node inspector override.
+## Build, run, test
 
-- `tools/axe-web.swift` uses FBControlCore's remote-content discovery to include
-  WebView controls in native snapshots. The Deno adapter maps headings to text
-  and links to buttons so MCP's semantic snapshot format can represent them.
-- Setup pins XcodeBuildMCP 2.7.0 and the private idb compile-time headers. Framework
-  symlinks and Swift interface compatibility fixes live only in the ignored
-  `.xcodebuildmcp/cache/`. Rerun `deno task setup:ios-testing` after changing the
-  helper, Xcode, or npm cache location. See `tools/setup-ios-testing.ts`.
-- Accessibility can report full DOM bounds for controls clipped by scroll
-  areas. The adapter asks native accessibility to scroll tap targets into view
-  and refreshes their bounds before sending physical HID input.
-- Point lookup alone does **not** reliably detect CSS clipping. Controls behind
-  the fixed navigation or Undo bar are filtered out of snapshots so an agent
-  must scroll before tapping. A reported offscreen center can otherwise hit a
-  bottom tab. If a target is absent, swipe the current scroll reference and
-  capture again; do not tap coordinates copied from an older snapshot.
-  Require the whole target frame above the fixed controls, not just its center:
-  tab-bar padding can cover a center slightly above the tab buttons themselves.
-- Native popovers expose a `dismiss popup` button. The adapter restricts its
-  originally full-screen frame to an uncovered strip outside the popup. This
-  allows normal MCP taps to close the native iOS share sheet.
-- Some native share-sheet actions currently appear as text rather than buttons;
-  their remote frames can use local coordinates. Do not turn those labels into
-  clickable targets without fixing and verifying their coordinate conversion.
-  The smoke test asserts `Copy` as **text**, then taps `dismiss popup`.
+Use `swift/dev.sh` (details and timings in `swift/README.md`):
 
-## UI verification workflow
+- `./dev.sh run`: build, install and relaunch on the simulator (~2 s incremental).
+- `./dev.sh test`: core and store tests on macOS (~1 s). Use this while iterating.
+- `./dev.sh test-sim`: app tests on the iOS simulator. Run before handing off.
+- `SIM=<name|udid>` picks the simulator (default `iPhone 17 Pro`). When several
+  agents work at once, give each its own simulator and `DERIVED_DATA` path, and
+  keep all simulator activity (installs, launches, tests) on your own device.
 
-- Finish frontend edits before starting `deno task test:ios`. Vite HMR resets the
-  active screen and can make a good interaction look broken. Keep manual input
-  and other simulator automation out of a running smoke test.
-- The smoke test launches its own MCP stdio client with `simulator,ui-automation`
-  workflows. It covers item creation, kit/item reuse, search, packing, native
-  sharing and dismissal, persistence across relaunch, archive/restore, trip
-  reuse, reset confirmation, cascading deletion, Undo, and fixture cleanup.
-- It opens the share sheet and cancels; do not select recipients or send data
-  as part of verification without the user's instruction.
-- If a run fails, inspect its unique fixture suffix and current screen. Resume
-  or clean up only that run's fixtures through the UI. Do not delete the user's
-  lists, reset the simulator, or replace its persistence file to get a clean run.
-- Search for a uniquely named fixture before counting its visible rows. Existing
-  libraries can exceed the viewport; a missing offscreen target does not imply
-  creation failed or produced duplicates.
-- Reveal status text before asserting it. Longer checklists can scroll the
-  progress card offscreen while testing bottom actions such as Reset. The smoke
-  test's `expectText` helper scrolls toward earlier content when needed.
-- MCP `type_text` rejects embedded newlines and refocuses its target on each
-  call. Use `key_press` (Return = 40) to submit an inline item field.
-- For quick layout/behavior checks, use an isolated mobile Playwright WebKit
-  context with mocked Tauri `read_store`/`write_store` calls. Use `locator.tap()`
-  with touch-enabled WebKit; mouse `click()` can report spurious interception.
-  These fixtures must never replace the real simulator's store.
+New source files are picked up automatically; `dev.sh` regenerates the project
+when the file list or `project.yml` changes.
 
-## Motion and haptics
+## Store
 
-- Keep list entries keyed by domain ID with Lit `repeat`; positional mapping
-  reuses the wrong DOM nodes when filtering, removing, or inserting rows.
-- `components/list-motion.ts` supplies the existing Lit motion directive for
-  layout movement and entry feedback. Avoid scaling text or retaining removed,
-  actionable rows as exit-animation ghosts. Within each checklist group, checked
-  items move to the bottom with animation; unchecking restores their original
-  position among unpacked items. Preserve kit order within each packing state.
-  The checkmark and haptic update immediately; wait 80 ms before changing row
-  order so the check reads first. Keep this delay local to the UI, cancel its
-  timer when leaving the view, and do not delay the store action or persistence.
-- Bottom sheets (`<dialog>`) open and close through `presentSheet`/`dismissSheet`
-  in `components/sheet.ts`, which add the spring, swipe-down-to-dismiss, and
-  backdrop fade (`--sheet-progress`, inherited by `::backdrop`). Do not call
-  `showModal()`/`close()` directly. A swipe dismissal fires the dialog's
-  `cancel` event, so handle `cancel` by calling `dismissSheet`.
-- `animated-number.ts` supplies packing counters. Reset counters when switching
-  trips so values do not animate from a different trip's progress.
-- Respect `prefers-reduced-motion` in JavaScript as well as CSS: CSS rules alone
-  do not disable Web Animations API animations or requestAnimationFrame counters.
-  Browser checks should verify real animation frames, stable row identity, and
-  the reduced-motion path, rather than just checking that classes exist.
-- Packing haptics are handled centrally by `hapticOnCheck` in `store/process.ts`:
-  one native `impactFeedback("light")` per `trip/toggle-checked` action. The Rust
-  mobile builder installs the haptics plugin and `capabilities/default.json`
-  grants `haptics:default`. Avoid adding a second call in click handlers.
-- An isolated browser test can spy on `plugin:haptics|impact_feedback` to verify
-  the command/style and count. A simulator cannot confirm the physical feel;
-  verify that on a real iPhone before claiming tactile feedback was tested.
+- All persistent changes go through `store.send(action)`; `AppModel.update` is the
+  only place state changes. Transient UI state (search text, sheets, filters)
+  stays in `@State`.
+- `withAnimation { store.send(...) }` does **not** animate: ObservableStore applies
+  an empty transaction. Animate with `.animation(_:value:)` on the views.
+- `Sources/Store/` must import only Foundation, Combine, OSLog, ObservableStore and
+  TurbolistsCore. Importing SwiftUI or UIKit there breaks `dev.sh test` on macOS.
+- Saves are debounced 500 ms and run on one serial queue so they land in order.
+  Nothing is written before loading has finished, and a failed load never
+  overwrites the file. The JSON format matches the old app's `store.json`.
+- Destructive actions set `undo` (a snapshot plus a message); any later data edit
+  clears it. Send a pending edit (for example an uncommitted rename) *before* the
+  destructive action, or it will clear the Undo banner.
 
-Run `deno task test` and `deno task typecheck` for core changes, and
-`deno task build` from `packages/app` for frontend changes. Rust persistence tests
-run with `cargo test --lib` from `packages/app/src-tauri`.
+## UI
+
+- Native idioms first: `NavigationStack`, `.searchable`, swipe actions, context
+  menus, `.sheet` with detents, `.confirmationDialog`, `ShareLink`. System chrome
+  (tab bar, toolbars, alerts, sheets) stays Liquid Glass; do not paint over it.
+- The app's identity comes from `Theme.swift`: the moss palette (dark) and warm
+  paper (light), softened blue for actions, moss green for "all packed", rounded
+  tabular digits for counters. Add colours and shared components there, not inline.
+- Keep lists keyed by domain ID.
+- The trip checklist is a custom `ScrollView` of cards, not a `List`: the stock
+  move animation made the card edge dip and rows overlap. The tick and
+  strike-through show immediately; the row moves to the bottom of its group after
+  260 ms (80 ms with Reduce Motion). Unchecking restores kit order. Cancel the
+  timer when leaving the screen; never delay the store action.
+- Haptics: one light impact per packing toggle and a success haptic when the last
+  item is packed, via `.sensoryFeedback` in the views. Do not add others. A
+  simulator cannot confirm the feel; check on a real iPhone before claiming it.
+- Respect Reduce Motion (`accessibilityReduceMotion`), Dynamic Type, and both
+  colour schemes in every screen. Keep clear accessibility labels on controls:
+  the app is verified through the accessibility tree.
+- Name fields are capped at 120 characters (`String.capped`).
+
+## Simulator verification
+
+Use XcodeBuildMCP (`snapshot_ui`, `tap`, `type_text`, `long_press`, `swipe`,
+`screenshot`); defaults are in `.xcodebuildmcp/config.yaml`.
+
+- The config still routes input through `tools/axe-web`, the old WebView adapter.
+  It passes native controls through unchanged but needs its helper compiled once
+  per checkout: `deno task setup:ios-testing`.
+- Use current `elementRef`s; refresh the snapshot after navigation, scrolling or
+  sheet changes.
+- Row actions (delete, archive, pack again, remove from kit) are swipe actions and
+  context menus: `long_press` the row, then tap the menu item.
+- `type_text` rejects newlines; submit with `key_press` (Return = 40).
+- Look at screenshots, in light and dark, before calling visual work done.
+- The simulator may also hold the old app (`com.turbolists.app`) with real data.
+  Never reset or erase the simulator or touch that app. Create and clean up your
+  own test data through the UI.
+- There is no end-to-end smoke test for the SwiftUI app yet; `deno task test:ios`
+  targets the old app and will not pass against this one.

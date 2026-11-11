@@ -1,4 +1,4 @@
-# Turbolists — SwiftUI spike
+# Turbolists (SwiftUI)
 
 - `TurbolistsCore/` — Swift package: pure domain logic ported from `packages/core`.
 - `Turbolists/` — SwiftUI iOS app (XcodeGen `project.yml`). Bundle ID `com.turbolists.swiftui`. iOS 26+.

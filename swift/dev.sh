@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast build/run/test loop for the SwiftUI spike. See swift/README.md.
+# Fast build/run/test loop for the SwiftUI app. See swift/README.md.
 #
 #   ./dev.sh build      regenerate project if needed, build app for the simulator
 #   ./dev.sh run        build, install, and relaunch on the simulator
