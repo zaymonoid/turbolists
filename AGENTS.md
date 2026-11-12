@@ -79,6 +79,9 @@ when the file list or `project.yml` changes.
   paper (light), softened blue for actions, moss green for "all packed", rounded
   tabular digits for counters. Add colours and shared components there, not inline.
 - Keep lists keyed by domain ID.
+- Confirmation dialogs attach to the row or button that raised them
+  (`.confirmationDialog(…, isPresented: $pending.presents(item))`), so the iOS 26
+  popover points at it instead of floating over the screen.
 - The trip checklist is a custom `ScrollView` of cards, not a `List`: the stock
   move animation made the card edge dip and rows overlap. Packing a row moves it to
   the bottom of its group straight away with the system `.default` animation (none

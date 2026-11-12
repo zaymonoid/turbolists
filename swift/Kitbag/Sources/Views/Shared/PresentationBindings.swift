@@ -22,3 +22,17 @@ extension View {
         }
     }
 }
+
+extension Binding {
+    /// True while `self` holds `item`; set to false, it clears `self`.
+    ///
+    /// Attach a "present while non-nil" dialog to the row or button it is about, so
+    /// its popover points there instead of floating over the whole screen:
+    /// `.confirmationDialog(…, isPresented: $pendingDelete.presents(kit))`.
+    func presents<Item: Identifiable>(_ item: Item) -> Binding<Bool> where Value == Item? {
+        Binding<Bool>(
+            get: { wrappedValue?.id == item.id },
+            set: { if !$0, wrappedValue?.id == item.id { wrappedValue = nil } }
+        )
+    }
+}

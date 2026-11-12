@@ -41,16 +41,6 @@ struct TripsView: View {
         .onChange(of: archivedView) { query = "" }
         .path($path, follows: store.state.selectedTripId) { store.send(.selectTrip($0)) }
         .textPrompt($prompt)
-        .confirmationDialog(
-            deleting.map { "Delete “\($0.name)”?" } ?? "",
-            isPresented: $deleting.tripPresented,
-            titleVisibility: .visible,
-            presenting: deleting
-        ) { trip in
-            Button("Delete", role: .destructive) { store.send(.deleteTrip(id: trip.id)) }
-        } message: { _ in
-            Text("This packing list and its progress will be removed. Your kits and items stay in your library.")
-        }
     }
 
     // MARK: List
@@ -136,7 +126,9 @@ struct TripsView: View {
         .buttonStyle(CardButtonStyle())
         .accessibilityLabel(trip.name)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button("Delete", systemImage: "trash", role: .destructive) { deleting = trip }
+            // No destructive role: List would remove the row before the confirmation, and the
+            // confirmation is anchored to the row. Red comes from the tint.
+            Button("Delete", systemImage: "trash") { deleting = trip }
                 .tint(.red)
             archiveButton(trip).tint(Theme.inkFaint)
         }
@@ -154,6 +146,11 @@ struct TripsView: View {
         }
         // Swipe actions already appear as VoiceOver actions; Rename is only in the context menu.
         .accessibilityAction(named: "Rename") { rename(trip) }
+        .confirmationDialog("Delete “\(trip.name)”?", isPresented: $deleting.presents(trip), titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { store.send(.deleteTrip(id: trip.id)) }
+        } message: {
+            Text("This packing list and its progress will be removed. Your kits and items stay in your library.")
+        }
     }
 
     private func packAgainButton(_ trip: Trip) -> some View {
@@ -302,14 +299,6 @@ private struct TripCard: View {
 enum TripSheet: String, Identifiable {
     case setup, settings
     var id: String { rawValue }
-}
-
-extension Optional {
-    /// Presentation binding for "present while non-nil" alerts and dialogs.
-    var tripPresented: Bool {
-        get { self != nil }
-        set { if !newValue { self = nil } }
-    }
 }
 
 /// Matches JS `new Date().toISOString()`.

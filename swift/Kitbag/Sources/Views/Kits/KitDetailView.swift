@@ -108,10 +108,10 @@ struct KitDetailView: View {
                 Button("Delete \(kit.name)", systemImage: "trash", role: .destructive) {
                     pendingDelete = kit
                 }
+                .kitDeleteConfirmation(kit, pending: $pendingDelete)
             }
         }
         .textPrompt($prompt)
-        .kitDeleteConfirmation($pendingDelete)
         .task {
             guard autoFocus else { return }
             // Let the push animation settle before raising the keyboard.

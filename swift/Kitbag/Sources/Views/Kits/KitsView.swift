@@ -38,7 +38,6 @@ struct KitsView: View {
                 }
         }
         .textPrompt($prompt)
-        .kitDeleteConfirmation($pendingDelete)
         .path($path, follows: openKitId) { id in
             if id == nil { focusNewKit = nil }
             store.send(.selectKit(id))
@@ -89,12 +88,15 @@ struct KitsView: View {
                         Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = kit }
                     }
                     .swipeActions(edge: .trailing) {
-                        Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = kit }
+                        // No destructive role: List would remove the row before the confirmation, and the
+                        // confirmation is anchored to the row. Red comes from the tint.
+                        Button("Delete", systemImage: "trash") { pendingDelete = kit }
                             .tint(.red)
                             .labelStyle(.iconOnly)
                     }
                     // Swipe actions already appear as VoiceOver actions; Rename is only in the context menu.
                     .accessibilityAction(named: "Rename") { rename(kit) }
+                    .kitDeleteConfirmation(kit, pending: $pendingDelete)
                 }
             }
             .listStyle(.plain)
@@ -235,26 +237,27 @@ extension TextPrompt {
 }
 
 extension View {
-    /// Usage-aware "Delete kit" confirmation. Deleting the open kit clears the
-    /// selection in the reducer, which pops its screen.
-    func kitDeleteConfirmation(_ kit: Binding<Kit?>) -> some View {
-        modifier(KitDeleteConfirmation(kit: kit))
+    /// Usage-aware "Delete kit" confirmation for `kit`, anchored to this view (its row
+    /// or Delete button) and shown while `pending` is `kit`. Deleting the open kit
+    /// clears the selection in the reducer, which pops its screen.
+    func kitDeleteConfirmation(_ kit: Kit, pending: Binding<Kit?>) -> some View {
+        modifier(KitDeleteConfirmation(kit: kit, pending: pending))
     }
 }
 
 private struct KitDeleteConfirmation: ViewModifier {
     @EnvironmentObject var store: Store<AppModel>
-    @Binding var kit: Kit?
+    var kit: Kit
+    @Binding var pending: Kit?
 
     func body(content: Content) -> some View {
         content.confirmationDialog(
-            kit.map { "Delete “\($0.name)”?" } ?? "",
-            isPresented: Binding(get: { kit != nil }, set: { if !$0 { kit = nil } }),
-            titleVisibility: .visible,
-            presenting: kit
-        ) { kit in
+            "Delete “\(kit.name)”?",
+            isPresented: $pending.presents(kit),
+            titleVisibility: .visible
+        ) {
             Button("Delete", role: .destructive) { store.send(.deleteKit(id: kit.id)) }
-        } message: { kit in
+        } message: {
             let count = kitUsage(store.state.data.kits, trips: store.state.data.trips)[kit.id] ?? 0
             Text("Your items stay in the library." + (count > 0 ? " This kit will also be removed from \(plural(count, "trip"))." : ""))
         }

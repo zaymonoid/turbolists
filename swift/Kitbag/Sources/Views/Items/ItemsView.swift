@@ -57,19 +57,6 @@ struct ItemsView: View {
             }
         }
         .textPrompt($prompt)
-        .confirmationDialog(
-            pendingDelete.map { "Delete “\($0.name)”?" } ?? "",
-            isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
-            titleVisibility: .visible,
-            presenting: pendingDelete
-        ) { item in
-            Button("Delete", role: .destructive) { store.send(.deleteItem(id: item.id)) }
-        } message: { item in
-            let count = usage[item.id]?.count ?? 0
-            Text(count > 0
-                ? "This also removes it from \(plural(count, "kit")) and all packing checklists."
-                : "This item will be removed from your library.")
-        }
     }
 
     private func list(_ filtered: [Item], usage: [ItemId: Set<KitId>]) -> some View {
@@ -121,7 +108,9 @@ struct ItemsView: View {
         .accessibilityHint("Rename")
         .accessibilityValue(kitCount > 0 ? "In \(plural(kitCount, "kit"))" : "Not in a kit yet")
         .swipeActions(edge: .trailing) {
-            Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = item }
+            // No destructive role: List would remove the row before the confirmation, and the
+            // confirmation is anchored to the row. Red comes from the tint.
+            Button("Delete", systemImage: "trash") { pendingDelete = item }
                 .tint(.red)
                 .labelStyle(.iconOnly)
         }
@@ -132,6 +121,13 @@ struct ItemsView: View {
         .contextMenu {
             Button("Rename", systemImage: "pencil") { rename(item) }
             Button("Delete", systemImage: "trash", role: .destructive) { pendingDelete = item }
+        }
+        .confirmationDialog("Delete “\(item.name)”?", isPresented: $pendingDelete.presents(item), titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { store.send(.deleteItem(id: item.id)) }
+        } message: {
+            Text(kitCount > 0
+                ? "This also removes it from \(plural(kitCount, "kit")) and all packing checklists."
+                : "This item will be removed from your library.")
         }
     }
 
