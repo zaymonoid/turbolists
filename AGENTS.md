@@ -60,6 +60,12 @@ when the file list or `project.yml` changes.
 - Saves are debounced 500 ms and run on one serial queue so they land in order.
   Nothing is written before loading has finished, and a failed load never
   overwrites the file. The JSON format matches the old app's `store.json`.
+- Navigation is store state, changed in one action (`.openKit(id)` sets tab and
+  selection together). Stacks follow it with `View.path(_:follows:select:)`, which
+  applies the selection after the update that changed it; bound directly,
+  `NavigationStack` drops a push that lands with a list insertion.
+- Name prompts use `TextPrompt` (a `UIAlertController`), not SwiftUI `.alert`: its
+  `onSubmit` runs after the alert has gone, so it can navigate or present at once.
 - Destructive actions set `undo` (a snapshot plus a message); any later data edit
   clears it. Send a pending edit (for example an uncommitted rename) *before* the
   destructive action, or it will clear the Undo banner.

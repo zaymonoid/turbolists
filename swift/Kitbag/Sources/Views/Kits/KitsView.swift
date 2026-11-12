@@ -15,22 +15,16 @@ struct KitsView: View {
 
     private var kits: [Kit] { store.state.data.kits }
 
-    /// The navigation path mirrors `selectedKitId` (ignoring a stale selection).
-    private var path: Binding<[KitId]> {
-        Binding(
-            get: {
-                guard let id = store.state.selectedKitId, kits.contains(where: { $0.id == id }) else { return [] }
-                return [id]
-            },
-            set: {
-                if $0.isEmpty { focusNewKit = nil }
-                store.send(.selectKit($0.last))
-            }
-        )
+    /// Follows `selectedKitId` (see `View.path(_:follows:select:)`).
+    @State private var path: [KitId] = []
+
+    /// The open kit, ignoring a stale selection.
+    private var openKitId: KitId? {
+        store.state.selectedKitId.flatMap { id in kits.contains(where: { $0.id == id }) ? id : nil }
     }
 
     var body: some View {
-        NavigationStack(path: path) {
+        NavigationStack(path: $path) {
             content
                 .navigationTitle("Kits")
                 .navigationSubtitle("Pack for every part of your trip.")
@@ -45,6 +39,10 @@ struct KitsView: View {
         }
         .textPrompt($prompt)
         .kitDeleteConfirmation($pendingDelete)
+        .path($path, follows: openKitId) { id in
+            if id == nil { focusNewKit = nil }
+            store.send(.selectKit(id))
+        }
     }
 
     @ViewBuilder
@@ -123,7 +121,7 @@ struct KitsView: View {
             store.send(.createKit(id: id, name: name))
             query = ""
             focusNewKit = id
-            store.send(.selectKit(id))
+            store.send(.openKit(id))
         }
     }
 

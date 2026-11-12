@@ -12,24 +12,16 @@ struct TripsView: View {
     /// Sheet over the trip detail; `.setup` right after creating a trip.
     @State private var sheet: TripSheet?
 
-    @State private var creating = false
-    @State private var packingAgain: Trip?
-    @State private var renaming: Trip?
+    @State private var prompt: TextPrompt?
     @State private var deleting: Trip?
-    @State private var draft = ""
+    /// Follows `selectedTripId` (see `View.path(_:follows:select:)`).
+    @State private var path: [TripId] = []
 
     private var trips: [Trip] { store.state.data.trips }
     private var kits: [Kit] { store.state.data.kits }
 
-    private var path: Binding<[TripId]> {
-        Binding(
-            get: { store.state.selectedTripId.map { [$0] } ?? [] },
-            set: { store.send(.selectTrip($0.last)) }
-        )
-    }
-
     var body: some View {
-        NavigationStack(path: path) {
+        NavigationStack(path: $path) {
             list
                 .navigationTitle("Trips")
                 .navigationSubtitle("Less remembering. More going.")
@@ -47,29 +39,8 @@ struct TripsView: View {
                 }
         }
         .onChange(of: archivedView) { query = "" }
-        .alert("New trip", isPresented: $creating) {
-            TextField("e.g. Weekend on the coast", text: $draft.capped)
-                .textInputAutocapitalization(.sentences)
-            Button("Cancel", role: .cancel) {}
-            Button("Create", action: create)
-        } message: {
-            Text("Where are you headed? Give your packing list a name.")
-        }
-        .alert("Pack again", isPresented: $packingAgain.tripPresented, presenting: packingAgain) { trip in
-            TextField("Name", text: $draft.capped)
-            Button("Cancel", role: .cancel) {}
-            Button("Create trip") { packAgain(trip) }
-        } message: { _ in
-            Text("Reuse these kits with a fresh checklist. The original trip keeps its packing progress.")
-        }
-        .alert("Rename trip", isPresented: $renaming.tripPresented, presenting: renaming) { trip in
-            TextField("Trip name", text: $draft.capped)
-            Button("Cancel", role: .cancel) {}
-            Button("Save") {
-                let name = draft.tripTrimmed
-                if !name.isEmpty, name != trip.name { store.send(.renameTrip(id: trip.id, name: name)) }
-            }
-        }
+        .path($path, follows: store.state.selectedTripId) { store.send(.selectTrip($0)) }
+        .textPrompt($prompt)
         .confirmationDialog(
             deleting.map { "Delete “\($0.name)”?" } ?? "",
             isPresented: $deleting.tripPresented,
@@ -85,7 +56,7 @@ struct TripsView: View {
     // MARK: List
 
     private var matching: [Trip] {
-        let q = query.tripTrimmed.lowercased()
+        let q = query.trimmed.lowercased()
         return trips.reversed().filter {
             ($0.archived ?? false) == archivedView && (q.isEmpty || $0.name.lowercased().contains(q))
         }
@@ -133,7 +104,7 @@ struct TripsView: View {
 
     @ViewBuilder private func emptyState(_ matching: [Trip]) -> some View {
         if matching.isEmpty {
-            if query.tripTrimmed.isEmpty {
+            if query.trimmed.isEmpty {
                 EmptyState(
                     symbol: archivedView ? "archivebox" : "sun.horizon",
                     title: archivedView ? "No archived trips" : "No active trips",
@@ -176,13 +147,13 @@ struct TripsView: View {
         }
         .contextMenu {
             if !trip.kitIds.isEmpty { packAgainButton(trip) }
-            Button("Rename", systemImage: "pencil") { draft = trip.name; renaming = trip }
+            Button("Rename", systemImage: "pencil") { rename(trip) }
             archiveButton(trip)
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive) { deleting = trip }
         }
         // Swipe actions already appear as VoiceOver actions; Rename is only in the context menu.
-        .accessibilityAction(named: "Rename") { draft = trip.name; renaming = trip }
+        .accessibilityAction(named: "Rename") { rename(trip) }
     }
 
     private func packAgainButton(_ trip: Trip) -> some View {
@@ -198,40 +169,41 @@ struct TripsView: View {
     // MARK: Actions
 
     private func startCreate() {
-        draft = ""
-        creating = true
-    }
-
-    private func create() {
-        let name = draft.tripTrimmed
-        guard !name.isEmpty else { return }
-        let id = newTripId()
-        store.send(.createTrip(id: id, name: name, createdAt: tripCreatedAtNow()))
-        query = ""
-        archivedView = false
-        store.send(.selectTrip(id))
-        // Ask for kits once the alert has gone and the push has landed, so the
-        // sheet rises over a settled screen instead of mid-transition.
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(reduceMotion ? 150 : 500))
-            if store.state.selectedTripId == id { sheet = .setup }
+        prompt = TextPrompt(
+            title: "New trip",
+            message: "Where are you headed? Give your packing list a name.",
+            placeholder: "e.g. Weekend on the coast",
+            confirm: "Create"
+        ) { name in
+            let id = newTripId()
+            store.send(.createTrip(id: id, name: name, createdAt: tripCreatedAtNow()))
+            query = ""
+            archivedView = false
+            store.send(.openTrip(id))
+            sheet = .setup
         }
     }
 
-    private func startPackAgain(_ trip: Trip) {
-        draft = String("\(trip.name) again".prefix(120))
-        packingAgain = trip
+    private func startPackAgain(_ source: Trip) {
+        prompt = TextPrompt(
+            title: "Pack again",
+            message: "Reuse these kits with a fresh checklist. The original trip keeps its packing progress.",
+            initial: "\(source.name) again",
+            confirm: "Create trip"
+        ) { name in
+            let id = newTripId()
+            store.send(.duplicateTrip(sourceId: source.id, id: id, name: name, createdAt: tripCreatedAtNow()))
+            query = ""
+            archivedView = false
+            sheet = nil
+            store.send(.openTrip(id))
+        }
     }
 
-    private func packAgain(_ source: Trip) {
-        let name = draft.tripTrimmed
-        guard !name.isEmpty else { return }
-        let id = newTripId()
-        store.send(.duplicateTrip(sourceId: source.id, id: id, name: name, createdAt: tripCreatedAtNow()))
-        query = ""
-        archivedView = false
-        sheet = nil
-        store.send(.selectTrip(id))
+    private func rename(_ trip: Trip) {
+        prompt = TextPrompt(title: "Rename trip", placeholder: "Trip name", initial: trip.name) { name in
+            if name != trip.name { store.send(.renameTrip(id: trip.id, name: name)) }
+        }
     }
 
     /// Shared by the list, the detail's "Restore trip" and Trip settings (TS `archive()`).
@@ -330,18 +302,6 @@ private struct TripCard: View {
 enum TripSheet: String, Identifiable {
     case setup, settings
     var id: String { rawValue }
-}
-
-extension String {
-    var tripTrimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
-}
-
-extension String {
-    /// Names are limited to 120 characters, like the TS inputs' `maxlength`.
-    var capped: String {
-        get { self }
-        set { self = newValue.count > 120 ? String(newValue.prefix(120)) : newValue }
-    }
 }
 
 extension Optional {

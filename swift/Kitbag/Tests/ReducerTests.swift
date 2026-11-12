@@ -110,6 +110,19 @@ private func reduce(_ state: AppModel, _ action: AppAction) -> AppModel {
         #expect(reduce(before, .deleteKit(id: kit)).selectedKitId == nil)
     }
 
+    @Test func openingSwitchesTabAndSelectionInOneStepAndKeepsUndo() {
+        let deleted = reduce(initial(), .deleteItem(id: item))
+        let kitOpen = reduce(deleted, .openKit("beach"))
+        #expect(kitOpen.view == .kits)
+        #expect(kitOpen.selectedKitId == "beach")
+        #expect(kitOpen.undo == deleted.undo)
+        #expect(kitOpen.saveGeneration == deleted.saveGeneration)
+        let tripOpen = reduce(kitOpen, .openTrip("lake"))
+        #expect(tripOpen.view == .trips)
+        #expect(tripOpen.selectedTripId == "lake")
+        #expect(tripOpen.selectedKitId == "beach")
+    }
+
     @Test func failedInvariantLeavesStateUnchanged() {
         let before = initial()
         let after = reduce(before, .renameItem(id: "missing", name: "x"))

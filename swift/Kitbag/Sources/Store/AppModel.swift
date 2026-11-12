@@ -74,6 +74,12 @@ struct AppModel: ModelProtocol {
         case .selectKit(let id):
             var next = state; next.selectedKitId = id
             return Update(state: next)
+        case .openKit(let id):
+            var next = state; next.view = .kits; next.selectedKitId = id
+            return Update(state: next)
+        case .openTrip(let id):
+            var next = state; next.view = .trips; next.selectedTripId = id
+            return Update(state: next)
 
         // Recovery
         case .undo:

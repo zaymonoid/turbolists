@@ -144,7 +144,7 @@ struct TripDetailView: View {
 
     @ViewBuilder private func checklist(_ progress: PackProgress) -> some View {
         let items = Dictionary(store.state.data.items.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let q = query.tripTrimmed.lowercased()
+        let q = query.trimmed.lowercased()
         let matches = { (id: ItemId) in q.isEmpty || (items[id]?.name ?? "").lowercased().contains(q) }
         let shown = { (id: ItemId) in matches(id) && (!remainingOnly || !trip.checked.contains(id)) }
         let groups = checklistGroups(trip, kits: kits)

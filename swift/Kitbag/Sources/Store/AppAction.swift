@@ -32,6 +32,10 @@ enum AppAction: Equatable, Sendable {
     case setView(AppView)
     case selectTrip(TripId?)
     case selectKit(KitId?)
+    /// Show the Kits tab with this kit open (tab and selection change together).
+    case openKit(KitId)
+    /// Show the Trips tab with this trip open (tab and selection change together).
+    case openTrip(TripId)
     // Recovery
     case undo
     case dismissUndo

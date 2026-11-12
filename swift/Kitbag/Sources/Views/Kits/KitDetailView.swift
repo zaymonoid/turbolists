@@ -182,7 +182,7 @@ struct KitDetailView: View {
                     return .handled
                 }
                 .onChange(of: query) {
-                    if query.count > 120 { query = String(query.prefix(120)) }
+                    if query.count > String.nameLimit { query = query.capped }
                 }
         }
     }

@@ -98,8 +98,7 @@ struct TripSettingsSheet: View {
                         store.send(.createKit(id: id, name: name))
                         store.send(.addKitToTrip(tripId: trip.id, kitId: id))
                         dismiss()
-                        store.send(.setView(.kits))
-                        store.send(.selectKit(id))
+                        store.send(.openKit(id))
                     }
                 }
                 .fontWeight(.semibold)
@@ -154,9 +153,9 @@ struct TripSettingsSheet: View {
 
     private func commitName() {
         guard let trip else { return }
-        let trimmed = name.tripTrimmed
+        let trimmed = name.trimmed
         if !trimmed.isEmpty, trimmed != trip.name {
-            store.send(.renameTrip(id: trip.id, name: String(trimmed.prefix(120))))
+            store.send(.renameTrip(id: trip.id, name: trimmed.capped))
         } else if trimmed.isEmpty {
             name = trip.name
         }
