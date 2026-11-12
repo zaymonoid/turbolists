@@ -52,3 +52,4 @@ xcuserdata/
 *.xcresult
 *.dSYM/
 *.ipa
+.kata.local.toml
